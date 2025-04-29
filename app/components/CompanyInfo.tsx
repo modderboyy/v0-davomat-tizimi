@@ -390,10 +390,10 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
 // "errorFetchingData": "Error loading data. Please try again.", // Generic fetch error
 // "noCompanyIdProvided": "Company ID not provided.", // New error message
 // "durationNotSetWarning": "Subscription duration is not set.", // Warning if duration is missing
-// "upgradePopupTitle": "Upgrade or Renew Subscription", // Title for the popup
-// "upgradePopupMessage": "To upgrade or renew your subscription plan, please open the Attendance app on your Android device and use the 'Upgrade Subscription' button inside the app.", // Popup message with instructions
-// "downloadAppButton": "Download Attendance App", // Text for the download button
-// "downloadLinkNotAvailable": "App download link is not available.", // Error if link fetch fails (used internally/dev console)
+"upgradePopupTitle": "Upgrade or Renew Subscription", // Title for the popup
+ "upgradePopupMessage": "To upgrade or renew your subscription plan, please open the Attendance app on your Android device and use the 'Upgrade Subscription' button inside the app.", // Popup message with instructions
+ "downloadAppButton": "Download Attendance App", // Text for the download button
+ "downloadLinkNotAvailable": "App download link is not available.", // Error if link fetch fails (used internally/dev console)
 // "downloadLinkNotAvailableMessage": "The app download link is currently unavailable. Please contact support.", // Message in popup if link is missing
 // "close": "Close", // Aria label for close button
 
