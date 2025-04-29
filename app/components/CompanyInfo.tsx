@@ -5,7 +5,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useLanguage } from "../context/LanguageContext"
 import { AlertTriangle, Check, ExternalLink, X, CalendarDays } from "lucide-react"
 
-export default function CompanyInfo({ companyId, isSubscriptionActive = true }) {
+export default function CompanyInfo({ companyId, isSubscriptionActive = true, openAndroidApp }) {
   const [companyData, setCompanyData] = useState(null)
   const [employeeCount, setEmployeeCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -76,7 +76,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       case 3:
         return "∞"
       default:
-        return 25 // Default to basic limit
+        return 5 // Default to basic limit
     }
   }
 
@@ -177,24 +177,15 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
         </div>
 
         <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row gap-4">
-          <a
-            href="#"
-            className="btn btn-primary flex items-center justify-center gap-2"
-            onClick={(e) => {
-              e.preventDefault()
-              alert("Bu funksiya hali mavjud emas.")
-            }}
-          >
+          <button onClick={openAndroidApp} className="btn btn-primary flex items-center justify-center gap-2">
             {t("renewSubscription")}
             <ExternalLink className="h-4 w-4" />
-          </a>
+          </button>
           <a
-            href="#"
+            href="https://t.me/modderboy"
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn btn-outline flex items-center justify-center gap-2"
-            onClick={(e) => {
-              e.preventDefault()
-              alert("Bu funksiya hali mavjud emas.")
-            }}
           >
             {t("contactSupport")}
           </a>
@@ -251,7 +242,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
             <div className="flex flex-col">
               <div className="flex items-center mb-1">
                 <span className="text-lg font-semibold">
-                  {employeeCount} / {employeeLimit}
+                  {employeeCount} / {employeeLimit === Number.POSITIVE_INFINITY ? "∞" : employeeLimit}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{t("usedEmployees")}</span>
               </div>
@@ -297,24 +288,15 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
 
       {/* Tugmalar */}
       <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row gap-4">
-        <a
-          href="#"
-          className="btn btn-primary flex items-center justify-center gap-2"
-          onClick={(e) => {
-            e.preventDefault()
-            alert("Bu funksiya hali mavjud emas.")
-          }}
-        >
+        <button onClick={openAndroidApp} className="btn btn-primary flex items-center justify-center gap-2">
           {t("upgradeSubscription")}
           <ExternalLink className="h-4 w-4" />
-        </a>
+        </button>
         <a
-          href="#"
+          href="https://t.me/modderboy"
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn btn-outline flex items-center justify-center gap-2"
-          onClick={(e) => {
-            e.preventDefault()
-            alert("Bu funksiya hali mavjud emas.")
-          }}
         >
           {t("contactSupport")}
         </a>

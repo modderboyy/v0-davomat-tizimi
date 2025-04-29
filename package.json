@@ -62,10 +62,10 @@
     "@emotion/is-prop-valid": "latest",
     "@supabase/auth-helpers-nextjs": "latest",
     "framer-motion": "latest",
+    "html5-qrcode": "latest",
     "react-datepicker": "latest",
     "xlsx": "latest",
-    "react-toastify": "latest",
-    "html5-qrcode": "latest"
+    "react-toastify": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

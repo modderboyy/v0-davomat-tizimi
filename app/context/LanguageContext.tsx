@@ -324,6 +324,61 @@ const translations: Translations = {
     en: "Error adding employee",
     ru: "Ошибка при добавлении сотрудника",
   },
+  employeeCount: {
+    uz: "Xodimlar soni",
+    en: "Employee Count",
+    ru: "Количество сотрудников",
+  },
+  limitReached: {
+    uz: "Limit to'ldi",
+    en: "Limit Reached",
+    ru: "Лимит достигнут",
+  },
+  employeeLimitReached: {
+    uz: "Xodimlar limiti to'ldi. Yangi xodim qo'shish uchun obunani yangilang.",
+    en: "Employee limit reached. Upgrade your subscription to add more employees.",
+    ru: "Достигнут лимит сотрудников. Обновите подписку, чтобы добавить больше сотрудников.",
+  },
+  excessEmployeesRemoved: {
+    uz: "Limit oshib ketgani uchun {count} ta xodim o'chirildi.",
+    en: "{count} excess employees were removed due to limit restrictions.",
+    ru: "{count} лишних сотрудников были удалены из-за ограничений лимита.",
+  },
+  errorFetchingData: {
+    uz: "Ma'lumotlarni yuklashda xatolik yuz berdi",
+    en: "Error fetching data",
+    ru: "Ошибка при загрузке данных",
+  },
+  employeeAddedSuccessfully: {
+    uz: "Xodim muvaffaqiyatli qo'shildi",
+    en: "Employee added successfully",
+    ru: "Сотрудник успешно добавлен",
+  },
+  employeeUpdatedSuccessfully: {
+    uz: "Xodim ma'lumotlari muvaffaqiyatli yangilandi",
+    en: "Employee details updated successfully",
+    ru: "Данные сотрудника успешно обновлены",
+  },
+  help: {
+    uz: "Yordam",
+    en: "Help",
+    ru: "Помощь",
+  },
+  passwordIsRequiredForNewEmployee: {
+    uz: "Yangi xodim uchun parol kiritish shart",
+    en: "Password is required for new employee",
+    ru: "Для нового сотрудника требуется пароль",
+  },
+  userDataNotFoundAfterSignup: {
+    uz: "Ro'yxatdan o'tgandan so'ng foydalanuvchi ma'lumotlari topilmadi",
+    en: "User data not found after signup",
+    ru: "Данные пользователя не найдены после регистрации",
+  },
+  errorUpdatingEmployeeDetailsAfterSignup: {
+    uz: "Xodim ma'lumotlarini yangilashda xatolik yuz berdi",
+    en: "Error updating employee details after signup",
+    ru: "Ошибка при обновлении данных сотрудника после регистрации",
+  },
 }
 
 type LanguageContextType = {

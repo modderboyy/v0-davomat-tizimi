@@ -9,7 +9,7 @@ import EmployeeChart from "./EmployeeChart"
 import { ThemeToggle } from "./ThemeToggle"
 import { registerLocale, setDefaultLocale } from "react-datepicker"
 import uz from "date-fns/locale/uz"
-import { Edit2, Check, X, Download, Save, AlertTriangle } from "lucide-react"
+import { Edit2, Check, X, Download, Save, AlertTriangle, HelpCircle } from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
 import PieChart from "./PieChart"
 import { useLanguage } from "../context/LanguageContext"
@@ -36,9 +36,65 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
   const [companyData, setCompanyData] = useState(null)
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [employeeLimit, setEmployeeLimit] = useState(0)
   const supabase = createClientComponentClient()
   const { t, language } = useLanguage()
   const { showNotification } = useDynamicIsland()
+
+  // Function to get employee limit based on plan
+  const getEmployeeLimit = (planValue) => {
+    switch (planValue) {
+      case 1: // Basic
+        return 5
+      case 2: // Premium
+        return 125
+      case 3: // Bigplan
+        return Number.POSITIVE_INFINITY // No limit
+      default:
+        return 0 // No employees allowed
+    }
+  }
+
+  // Function to remove excess employees
+  const removeExcessEmployees = useCallback(async () => {
+    if (!companyData || !isSubscriptionActive) return
+
+    try {
+      const limit = getEmployeeLimit(companyData.plan)
+
+      // Get all employees sorted by creation date (newest first)
+      const { data: employees, error: fetchError } = await supabase
+        .from("users")
+        .select("id, created_at")
+        .eq("company_id", companyId)
+        .eq("is_super_admin", false)
+        .order("created_at", { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      // If we have more employees than the limit
+      if (employees.length > limit) {
+        // Get the excess employees (newest ones)
+        const excessEmployees = employees.slice(limit)
+
+        // Delete each excess employee
+        for (const employee of excessEmployees) {
+          const { error: deleteError } = await supabase.from("users").delete().eq("id", employee.id)
+          if (deleteError) console.error("Error deleting excess employee:", deleteError)
+        }
+
+        showNotification("warning", t("excessEmployeesRemoved", { count: excessEmployees.length }))
+
+        // Refresh employee data
+        fetchEmployees()
+        if (view === "employees") {
+          fetchEmployeeDetails()
+        }
+      }
+    } catch (error) {
+      console.error("Error removing excess employees:", error)
+    }
+  }, [companyData, isSubscriptionActive, companyId, supabase, showNotification, t])
 
   // Fetch company data to check subscription status
   const fetchCompanyData = useCallback(async () => {
@@ -55,6 +111,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       // - Otherwise, subscription is active (null values are considered active)
       const isActive = !(data.plan === 0 || data.subscription === 0)
       setIsSubscriptionActive(isActive)
+
+      // Set employee limit based on plan
+      setEmployeeLimit(getEmployeeLimit(data.plan))
     } catch (error) {
       console.error("Error fetching company data:", error)
       showNotification("error", "Kompaniya ma'lumotlarini yuklashda xatolik yuz berdi")
@@ -193,6 +252,17 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     }
   }, [supabase, companyId, isSubscriptionActive, showNotification])
 
+  // Open Telegram channel
+  const openTelegramChannel = () => {
+    window.open("https://t.me/modderboy", "_blank")
+  }
+
+  // Open Android app
+  const openAndroidApp = () => {
+    // Try to open the Android app
+    window.location.href = "intent://com.modderboy.davomat#Intent;scheme=https;package=com.modderboy.davomat;end"
+  }
+
   useEffect(() => {
     fetchCompanyData()
   }, [fetchCompanyData])
@@ -220,6 +290,24 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       fetchBlockedUsers()
     }
   }, [view, fetchBlockedUsers, isSubscriptionActive])
+
+  // Periodically check for excess employees (every 5 minutes)
+  useEffect(() => {
+    if (isSubscriptionActive) {
+      // Initial check
+      removeExcessEmployees()
+
+      // Set up interval
+      const interval = setInterval(
+        () => {
+          removeExcessEmployees()
+        },
+        5 * 60 * 1000,
+      ) // 5 minutes
+
+      return () => clearInterval(interval)
+    }
+  }, [isSubscriptionActive, removeExcessEmployees])
 
   const handleReasonChange = (employeeId, reason) => {
     setReasons((prevReasons) => ({ ...prevReasons, [employeeId]: reason }))
@@ -330,6 +418,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     fetchEmployeeDetails()
     setShowAddEmployee(false)
     showNotification("success", "Xodim muvaffaqiyatli qo'shildi")
+
+    // Check for excess employees after adding
+    removeExcessEmployees()
   }
 
   // Subscription inactive message
@@ -344,8 +435,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
           className="btn btn-primary"
           onClick={(e) => {
             e.preventDefault()
-            // Redirect to subscription renewal page or show modal
-            alert("Bu funksiya hali mavjud emas.")
+            openAndroidApp()
           }}
         >
           {t("renewSubscription")}
@@ -501,9 +591,18 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       <div className="card">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <h3 className="text-xl font-semibold mb-4 md:mb-0">{t("employees")}</h3>
-          <button onClick={() => setShowAddEmployee(!showAddEmployee)} className="btn btn-primary">
-            {showAddEmployee ? t("employees") : t("addEmployee")}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button onClick={() => setShowAddEmployee(!showAddEmployee)} className="btn btn-primary">
+              {showAddEmployee ? t("employees") : t("addEmployee")}
+            </button>
+
+            {/* Employee limit indicator */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md">
+              <span className="text-sm">
+                {employeeDetails.length} / {employeeLimit === Number.POSITIVE_INFINITY ? "∞" : employeeLimit}
+              </span>
+            </div>
+          </div>
         </div>
 
         {showAddEmployee ? (
@@ -572,7 +671,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
   const renderCompanyView = () => {
     // Always show company view, but with different content based on subscription status
-    return <CompanyInfo companyId={companyId} isSubscriptionActive={isSubscriptionActive} />
+    return (
+      <CompanyInfo companyId={companyId} isSubscriptionActive={isSubscriptionActive} openAndroidApp={openAndroidApp} />
+    )
   }
 
   const renderBlockedView = () => {
@@ -640,6 +741,14 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         <header className="navbar px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{t("adminPanel")}</h1>
           <div className="flex items-center space-x-2">
+            {/* Help button */}
+            <button
+              onClick={openTelegramChannel}
+              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+              title={t("help")}
+            >
+              <HelpCircle className="h-5 w-5" />
+            </button>
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
