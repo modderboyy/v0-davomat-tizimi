@@ -9,7 +9,20 @@ import EmployeeChart from "./EmployeeChart"
 import { ThemeToggle } from "./ThemeToggle"
 import { registerLocale, setDefaultLocale } from "react-datepicker"
 import uz from "date-fns/locale/uz"
-import { Edit2, Check, X, Download, Save, AlertTriangle, HelpCircle, Trash2, UserPlus, Users } from "lucide-react"
+import {
+  Edit2,
+  Check,
+  X,
+  Download,
+  Save,
+  AlertTriangle,
+  HelpCircle,
+  Trash2,
+  UserPlus,
+  Users,
+  Clock,
+  TrendingUp,
+} from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
 import PieChart from "./PieChart"
 import { useLanguage } from "../context/LanguageContext"
@@ -19,6 +32,8 @@ import AddEmployeeForm from "./AddEmployeeForm"
 import CompanyInfo from "./CompanyInfo"
 import { useDynamicIsland } from "./DynamicIsland"
 import AutoEmployeeForm from "./AutoEmployeeForm"
+import DashboardStats from "./DashboardStats"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 registerLocale("uz", uz)
 setDefaultLocale("uz")
@@ -28,11 +43,12 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
   const [employeeDetails, setEmployeeDetails] = useState([])
   const [reasons, setReasons] = useState({})
   const [attendanceData, setAttendanceData] = useState([])
-  const [view, setView] = useState("company") // Default to company view
+  const [view, setView] = useState("dashboard") // Default to dashboard view
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [blockedUsers, setBlockedUsers] = useState([])
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [editName, setEditName] = useState("")
+  const [editLavozim, setEditLavozim] = useState("")
   const [showAddEmployee, setShowAddEmployee] = useState(false)
   const [showAutoEmployee, setShowAutoEmployee] = useState(false)
   const [companyData, setCompanyData] = useState(null)
@@ -40,6 +56,14 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [employeeLimit, setEmployeeLimit] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
+  const [dashboardStats, setDashboardStats] = useState({
+    totalEmployees: 0,
+    presentToday: 0,
+    lateToday: 0,
+    absentToday: 0,
+    averageWorkHours: 0,
+    attendanceTrend: [],
+  })
   const supabase = createClientComponentClient()
   const { t, language } = useLanguage()
   const { showNotification } = useDynamicIsland()
@@ -214,11 +238,13 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         const isEarlyLeave = ketishVaqti && ketishVaqti.getHours() * 60 + ketishVaqti.getMinutes() < 18 * 60
 
         let totalWorkTime = "-"
+        let totalWorkMinutes = 0
         if (kelishVaqti && ketishVaqti) {
           const diff = ketishVaqti.getTime() - kelishVaqti.getTime()
           const hours = Math.floor(diff / 3600000)
           const minutes = Math.floor((diff % 3600000) / 60000)
           totalWorkTime = `${hours}:${minutes.toString().padStart(2, "0")}`
+          totalWorkMinutes = hours * 60 + minutes
         }
 
         return {
@@ -231,13 +257,87 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
           arrivalStatus,
           isEarlyLeave,
           totalWorkTime,
+          totalWorkMinutes,
+          isLate: arrivalStatus === "yellow" || arrivalStatus === "red",
         }
       })
 
       setAttendanceData(fullAttendanceData)
+
+      // Update dashboard stats for today
+      if (formattedDate === new Date().toISOString().split("T")[0]) {
+        updateDashboardStats(fullAttendanceData, employees.length)
+      }
     },
     [supabase, employees, companyId, isSubscriptionActive, showNotification],
   )
+
+  // Function to update dashboard stats
+  const updateDashboardStats = (attendanceData, totalEmployees) => {
+    const presentToday = attendanceData.filter((record) => record.kelish_vaqti).length
+    const lateToday = attendanceData.filter((record) => record.isLate).length
+    const absentToday = totalEmployees - presentToday
+
+    // Calculate average work hours for those who have completed their day
+    const completedWorkRecords = attendanceData.filter(
+      (record) => record.kelish_vaqti && record.ketish_vaqti && record.totalWorkMinutes > 0,
+    )
+
+    const totalWorkMinutes = completedWorkRecords.reduce((sum, record) => sum + record.totalWorkMinutes, 0)
+
+    const averageWorkHours =
+      completedWorkRecords.length > 0 ? (totalWorkMinutes / completedWorkRecords.length / 60).toFixed(1) : 0
+
+    setDashboardStats((prev) => ({
+      ...prev,
+      totalEmployees,
+      presentToday,
+      lateToday,
+      absentToday,
+      averageWorkHours,
+    }))
+  }
+
+  // Fetch attendance trend data for the dashboard
+  const fetchAttendanceTrend = useCallback(async () => {
+    if (!isSubscriptionActive) return
+
+    try {
+      // Get data for the last 7 days
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - 6) // 7 days including today
+
+      const dateRange = []
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        dateRange.push(new Date(d).toISOString().split("T")[0])
+      }
+
+      const trendData = []
+
+      for (const date of dateRange) {
+        const { data, error } = await supabase
+          .from("davomat")
+          .select("id, kelish_vaqti")
+          .eq("kelish_sana", date)
+          .eq("company_id", companyId)
+
+        if (error) throw error
+
+        trendData.push({
+          date,
+          count: data.length,
+        })
+      }
+
+      setDashboardStats((prev) => ({
+        ...prev,
+        attendanceTrend: trendData,
+      }))
+    } catch (error) {
+      console.error("Error fetching attendance trend:", error)
+    }
+  }, [supabase, companyId, isSubscriptionActive])
 
   const fetchBlockedUsers = useCallback(async () => {
     if (!isSubscriptionActive) return
@@ -297,6 +397,13 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     }
   }, [view, fetchBlockedUsers, isSubscriptionActive])
 
+  // Fetch attendance trend when dashboard is viewed
+  useEffect(() => {
+    if (isSubscriptionActive && view === "dashboard") {
+      fetchAttendanceTrend()
+    }
+  }, [view, fetchAttendanceTrend, isSubscriptionActive])
+
   // Periodically check for excess employees (every 5 minutes)
   useEffect(() => {
     if (isSubscriptionActive) {
@@ -314,6 +421,18 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       return () => clearInterval(interval)
     }
   }, [isSubscriptionActive, removeExcessEmployees])
+
+  // Show a notification when the component mounts to ensure Dynamic Island is active
+  useEffect(() => {
+    if (isSubscriptionActive) {
+      // Small delay to ensure the UI is ready
+      const timer = setTimeout(() => {
+        showNotification("info", t("welcomeMessage"))
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [isSubscriptionActive, showNotification, t])
 
   const handleReasonChange = (employeeId, reason) => {
     setReasons((prevReasons) => ({ ...prevReasons, [employeeId]: reason }))
@@ -390,11 +509,13 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return
     setEditingEmployee(employee)
     setEditName(employee.name)
+    setEditLavozim(employee.lavozim)
   }
 
   const handleEditCancel = () => {
     setEditingEmployee(null)
     setEditName("")
+    setEditLavozim("")
   }
 
   const handleEditSave = async (employeeId) => {
@@ -403,19 +524,23 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     try {
       const { error } = await supabase
         .from("users")
-        .update({ name: editName })
+        .update({
+          name: editName,
+          lavozim: editLavozim,
+        })
         .eq("id", employeeId)
         .eq("company_id", companyId)
 
       if (error) throw error
 
-      showNotification("success", "Ism-familiya muvaffaqiyatli yangilandi")
+      showNotification("success", "Xodim ma'lumotlari muvaffaqiyatli yangilandi")
       fetchEmployeeDetails()
       setEditingEmployee(null)
       setEditName("")
+      setEditLavozim("")
     } catch (error) {
-      console.error("Error updating name:", error)
-      showNotification("error", "Ism-familiyani yangilashda xatolik yuz berdi")
+      console.error("Error updating employee details:", error)
+      showNotification("error", "Xodim ma'lumotlarini yangilashda xatolik yuz berdi")
     }
   }
 
@@ -470,7 +595,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       // Upload the file to Supabase Storage
       const fileExt = file.name.split(".").pop()
       const fileName = `${employeeId}.${fileExt}`
-      const filePath = `users/avatar/${fileName}`
+      const filePath = `users/avatars/${fileName}`
 
       const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, {
         upsert: true,
@@ -515,6 +640,154 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     </div>
   )
 
+  const renderDashboardView = () => {
+    if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
+
+    return (
+      <div className="space-y-6">
+        <h3 className="text-2xl font-semibold">{t("dashboard")}</h3>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("totalEmployees")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Users className="h-5 w-5 text-indigo-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.totalEmployees}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("presentToday")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.presentToday}</div>
+                <div className="text-sm text-muted-foreground ml-2">
+                  ({Math.round((dashboardStats.presentToday / dashboardStats.totalEmployees) * 100) || 0}%)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("lateToday")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 text-yellow-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.lateToday}</div>
+                <div className="text-sm text-muted-foreground ml-2">
+                  ({Math.round((dashboardStats.lateToday / dashboardStats.totalEmployees) * 100) || 0}%)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("averageWorkHours")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <TrendingUp className="h-5 w-5 text-blue-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.averageWorkHours}</div>
+                <div className="text-sm text-muted-foreground ml-2">{t("hours")}</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("attendanceOverview")}</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <PieChart attendanceData={attendanceData} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("attendanceTrend")}</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <DashboardStats attendanceTrend={dashboardStats.attendanceTrend} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("todayAttendance")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="table-container">
+              <table className="table">
+                <thead className="table-header">
+                  <tr>
+                    <th className="table-header-cell">{t("name")}</th>
+                    <th className="table-header-cell">{t("position")}</th>
+                    <th className="table-header-cell">{t("arrivalTime")}</th>
+                    <th className="table-header-cell">{t("departureTime")}</th>
+                    <th className="table-header-cell">{t("totalWorkTime")}</th>
+                  </tr>
+                </thead>
+                <tbody className="table-body">
+                  {attendanceData.slice(0, 5).map((record) => (
+                    <tr key={record.xodim_id} className="table-row">
+                      <td className="table-cell font-medium">{record.users.name}</td>
+                      <td className="table-cell">{record.users.lavozim}</td>
+                      <td className="table-cell">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.arrivalStatus === "red"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                              : record.arrivalStatus === "yellow"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                : record.kelish_vaqti
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {formatTime(record.kelish_vaqti)}
+                        </span>
+                      </td>
+                      <td className="table-cell">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.isEarlyLeave && record.ketish_vaqti
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                              : record.ketish_vaqti
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {formatTime(record.ketish_vaqti)}
+                        </span>
+                      </td>
+                      <td className="table-cell">{record.totalWorkTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   const renderAttendanceView = () => {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
@@ -541,6 +814,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             <thead className="table-header">
               <tr>
                 <th className="table-header-cell">{t("name")}</th>
+                <th className="table-header-cell">{t("position")}</th>
                 <th className="table-header-cell">{t("arrivalTime")}</th>
                 <th className="table-header-cell">{t("departureTime")}</th>
                 <th className="table-header-cell">{t("totalWorkTime")}</th>
@@ -551,6 +825,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
               {attendanceData.map((record) => (
                 <tr key={record.xodim_id} className="table-row">
                   <td className="table-cell font-medium">{record.users.name}</td>
+                  <td className="table-cell">{record.users.lavozim}</td>
                   <td className="table-cell">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -733,7 +1008,19 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
               <tbody className="table-body">
                 {employeeDetails.map((employee) => (
                   <tr key={employee.email} className="table-row">
-                    <td className="table-cell">{employee.lavozim}</td>
+                    <td className="table-cell">
+                      {editingEmployee?.email === employee.email ? (
+                        <input
+                          type="text"
+                          value={editLavozim}
+                          onChange={(e) => setEditLavozim(e.target.value)}
+                          className="input"
+                          placeholder={t("position")}
+                        />
+                      ) : (
+                        employee.lavozim
+                      )}
+                    </td>
                     <td className="table-cell">
                       {editingEmployee?.email === employee.email ? (
                         <input
@@ -741,6 +1028,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           className="input"
+                          placeholder={t("name")}
                         />
                       ) : (
                         employee.name
@@ -904,6 +1192,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         </header>
 
         <main className="p-4 md:p-6">
+          {view === "dashboard" && renderDashboardView()}
           {view === "attendance" && renderAttendanceView()}
           {view === "absence" && renderAbsenceView()}
           {view === "chart" && renderChartView()}

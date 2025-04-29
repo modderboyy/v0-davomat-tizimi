@@ -28,11 +28,13 @@ const DynamicIslandContext = createContext<DynamicIslandContextType | undefined>
 export function DynamicIslandProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [expanded, setExpanded] = useState(false)
+  const [islandVisible, setIslandVisible] = useState(false)
 
   // Show notification
   const showNotification = useCallback((type: NotificationType, message: string, duration = 5000) => {
     const id = Math.random().toString(36).substring(2, 9)
     setNotifications((prev) => [...prev, { id, type, message, duration }])
+    setIslandVisible(true)
     setExpanded(true)
   }, [])
 
@@ -40,12 +42,14 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
   const clearNotifications = useCallback(() => {
     setNotifications([])
     setExpanded(false)
+    // Keep the island visible but collapsed
   }, [])
 
   // Auto-collapse after all notifications are processed
   useEffect(() => {
     if (notifications.length === 0) {
       setExpanded(false)
+      // Don't hide the island completely, just collapse it
     }
   }, [notifications])
 
@@ -64,11 +68,18 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
     }
   }, [notifications])
 
+  // Always show the island with a welcome message if no notifications
+  useEffect(() => {
+    if (!islandVisible) {
+      setIslandVisible(true)
+    }
+  }, [islandVisible])
+
   return (
     <DynamicIslandContext.Provider value={{ showNotification, clearNotifications }}>
       {children}
       <AnimatePresence>
-        {notifications.length > 0 && (
+        {islandVisible && (
           <motion.div
             initial={{ y: -100, opacity: 0, scale: 0.6 }}
             animate={{
@@ -103,30 +114,37 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
                     </button>
                   </div>
                   <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <motion.div
-                        key={notification.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={`p-3 rounded-lg flex items-start ${
-                          notification.type === "success"
-                            ? "bg-green-900/30"
-                            : notification.type === "error"
-                              ? "bg-red-900/30"
-                              : "bg-blue-900/30"
-                        }`}
-                      >
-                        {notification.type === "success" ? (
-                          <CheckCircle className="h-5 w-5 text-green-400 mr-2 flex-shrink-0" />
-                        ) : notification.type === "error" ? (
-                          <AlertCircle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
-                        ) : (
-                          <Info className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
-                        )}
-                        <span className="text-sm">{notification.message}</span>
-                      </motion.div>
-                    ))}
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <motion.div
+                          key={notification.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={`p-3 rounded-lg flex items-start ${
+                            notification.type === "success"
+                              ? "bg-green-900/30"
+                              : notification.type === "error"
+                                ? "bg-red-900/30"
+                                : "bg-blue-900/30"
+                          }`}
+                        >
+                          {notification.type === "success" ? (
+                            <CheckCircle className="h-5 w-5 text-green-400 mr-2 flex-shrink-0" />
+                          ) : notification.type === "error" ? (
+                            <AlertCircle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
+                          ) : (
+                            <Info className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
+                          )}
+                          <span className="text-sm">{notification.message}</span>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="p-3 rounded-lg flex items-start bg-blue-900/30">
+                        <Info className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
+                        <span className="text-sm">No new notifications</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

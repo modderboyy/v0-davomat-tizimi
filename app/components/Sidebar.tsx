@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   Users,
+  LayoutDashboard,
 } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
@@ -53,6 +54,7 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
   }
 
   const menuItems = [
+    { id: "dashboard", icon: <LayoutDashboard />, label: t("dashboard") },
     { id: "attendance", icon: <ClipboardList />, label: t("attendance") },
     { id: "absence", icon: <Calendar />, label: t("attendanceReasons") },
     { id: "chart", icon: <BarChart2 />, label: t("charts") },

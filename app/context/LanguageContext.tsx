@@ -139,11 +139,6 @@ const translations: Translations = {
     en: "Unblock",
     ru: "Разблокировать",
   },
-  scanQR: {
-    uz: "QR kodni skanerlash",
-    en: "Scan QR Code",
-    ru: "Сканировать QR-код",
-  },
   refresh: {
     uz: "Yangilash",
     en: "Refresh",
@@ -168,11 +163,6 @@ const translations: Translations = {
     uz: "Davomat Tizimi Admin paneli",
     en: "Government Employees Attendance System",
     ru: "Система Учета Посещаемости Сотрудников",
-  },
-  scanQRDescription: {
-    uz: "QR kodni skanerlash orqali xodimlar davomati tizimiga kirish mumkin.",
-    en: "You can access the employee attendance system by scanning the QR code.",
-    ru: "Вы можете получить доступ к системе учета посещаемости, отсканировав QR-код.",
   },
   companyName: {
     uz: "Kompaniya nomi",
@@ -253,26 +243,6 @@ const translations: Translations = {
     uz: "Jo'natilmoqda...",
     en: "Submitting...",
     ru: "Отправка...",
-  },
-  scanning: {
-    uz: "Skanerlanmoqda...",
-    en: "Scanning...",
-    ru: "Сканирование...",
-  },
-  checkingWifi: {
-    uz: "Wi-Fi tekshirilmoqda...",
-    en: "Checking WiFi...",
-    ru: "Проверка WiFi...",
-  },
-  connectedTo: {
-    uz: "Ulangan",
-    en: "Connected to",
-    ru: "Подключено к",
-  },
-  locationRequired: {
-    uz: "Joylashuv ma'lumotlari kerak",
-    en: "Location data required",
-    ru: "Требуются данные о местоположении",
   },
   subscriptionInactive: {
     uz: "Obuna faol emas",
@@ -434,11 +404,6 @@ const translations: Translations = {
     en: "Email: '{company}1@modderboy.uz', '{company}2@modderboy.uz', ...",
     ru: "Email: '{company}1@modderboy.uz', '{company}2@modderboy.uz', ...",
   },
-  autoEmployeePasswordFormat: {
-    uz: "Parol: Tasodifiy parol generatsiya qilinadi",
-    en: "Password: A random password will be generated",
-    ru: "Пароль: Будет сгенерирован случайный пароль",
-  },
   invalidEmployeeCount: {
     uz: "Noto'g'ri xodimlar soni",
     en: "Invalid employee count",
@@ -503,6 +468,86 @@ const translations: Translations = {
     uz: "Avatar yuklash",
     en: "Avatar Upload",
     ru: "Загрузка аватара",
+  },
+  dashboard: {
+    uz: "Boshqaruv paneli",
+    en: "Dashboard",
+    ru: "Панель управления",
+  },
+  totalEmployees: {
+    uz: "Jami xodimlar",
+    en: "Total Employees",
+    ru: "Всего сотрудников",
+  },
+  presentToday: {
+    uz: "Bugun kelganlar",
+    en: "Present Today",
+    ru: "Присутствуют сегодня",
+  },
+  lateToday: {
+    uz: "Bugun kechikkanlar",
+    en: "Late Today",
+    ru: "Опоздали сегодня",
+  },
+  absentToday: {
+    uz: "Bugun kelmaganlar",
+    en: "Absent Today",
+    ru: "Отсутствуют сегодня",
+  },
+  averageWorkHours: {
+    uz: "O'rtacha ish soatlari",
+    en: "Average Work Hours",
+    ru: "Среднее рабочее время",
+  },
+  hours: {
+    uz: "soat",
+    en: "hours",
+    ru: "часов",
+  },
+  attendanceOverview: {
+    uz: "Davomat umumiy ko'rinishi",
+    en: "Attendance Overview",
+    ru: "Обзор посещаемости",
+  },
+  attendanceTrend: {
+    uz: "Davomat tendensiyasi",
+    en: "Attendance Trend",
+    ru: "Тенденция посещаемости",
+  },
+  todayAttendance: {
+    uz: "Bugungi davomat",
+    en: "Today's Attendance",
+    ru: "Посещаемость сегодня",
+  },
+  commonPassword: {
+    uz: "Umumiy parol",
+    en: "Common Password",
+    ru: "Общий пароль",
+  },
+  passwordWarning: {
+    uz: "Parol haqida ogohlantirish",
+    en: "Password Warning",
+    ru: "Предупреждение о пароле",
+  },
+  passwordWarningMessage: {
+    uz: "Iltimos, ushbu parolni eslab qoling yoki saqlang. Bu barcha yangi yaratilgan xodimlar uchun ishlatiladi va keyinchalik ko'rsatilmaydi.",
+    en: "Please remember or save this password. It will be used for all newly created employees and will not be shown again.",
+    ru: "Пожалуйста, запомните или сохраните этот пароль. Он будет использоваться для всех вновь созданных сотрудников и больше не будет показан.",
+  },
+  commonPasswordUsed: {
+    uz: "Barcha xodimlar uchun bir xil parol ishlatiladi",
+    en: "Same password is used for all employees",
+    ru: "Для всех сотрудников используется один и тот же пароль",
+  },
+  passwordTooShort: {
+    uz: "Parol juda qisqa. Kamida 6 ta belgi bo'lishi kerak.",
+    en: "Password is too short. It must be at least 6 characters.",
+    ru: "Пароль слишком короткий. Он должен содержать не менее 6 символов.",
+  },
+  welcomeMessage: {
+    uz: "Davomat tizimiga xush kelibsiz!",
+    en: "Welcome to the Attendance System!",
+    ru: "Добро пожаловать в систему учета посещаемости!",
   },
 }
 

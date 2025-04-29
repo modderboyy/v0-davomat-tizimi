@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useLanguage } from "../context/LanguageContext"
-import { Loader2, Users } from "lucide-react"
+import { Loader2, Users, AlertTriangle } from "lucide-react"
 import { useDynamicIsland } from "./DynamicIsland"
 
 export default function AutoEmployeeForm({
@@ -14,6 +14,7 @@ export default function AutoEmployeeForm({
   employeeLimit,
 }) {
   const [count, setCount] = useState(1)
+  const [password, setPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const { t } = useLanguage()
@@ -42,6 +43,12 @@ export default function AutoEmployeeForm({
       return
     }
 
+    // Validate password
+    if (!password || password.length < 6) {
+      setError(t("passwordTooShort"))
+      return
+    }
+
     setIsSubmitting(true)
     setError("")
 
@@ -64,7 +71,6 @@ export default function AutoEmployeeForm({
           const employeeNumber = currentEmployeeCount + i + j + 1
           const name = `${t("employee")} ${employeeNumber}`
           const email = `${sanitizedCompanyName}${employeeNumber}@modderboy.uz`
-          const password = `password${Math.floor(Math.random() * 10000)}`
           const lavozim = t("defaultPosition")
 
           // Create user in Auth
@@ -160,6 +166,32 @@ export default function AutoEmployeeForm({
           </p>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="password">
+            {t("commonPassword")}
+          </label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input"
+            required
+            disabled={isSubmitting || maxAllowed <= 0}
+            minLength={6}
+          />
+        </div>
+
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">{t("passwordWarning")}</h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">{t("passwordWarningMessage")}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
           <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">{t("autoEmployeeInfo")}</h4>
           <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-400 space-y-1">
@@ -174,7 +206,7 @@ export default function AutoEmployeeForm({
                   : "company",
               })}
             </li>
-            <li>{t("autoEmployeePasswordFormat")}</li>
+            <li>{t("commonPasswordUsed")}</li>
           </ul>
         </div>
 
