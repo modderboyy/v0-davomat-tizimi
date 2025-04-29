@@ -1108,9 +1108,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
   const renderCompanyView = () => {
     // Always show company view, but with different content based on subscription status
-    return (
-      <CompanyInfo companyId={companyId} isSubscriptionActive={isSubscriptionActive} openAndroidApp={openAndroidApp} />
-    )
+    return <CompanyInfo companyId={companyId} isSubscriptionActive={isSubscriptionActive} />
   }
 
   const renderBlockedView = () => {

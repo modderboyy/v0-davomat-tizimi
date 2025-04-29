@@ -5,11 +5,13 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useLanguage } from "../context/LanguageContext"
 import { AlertTriangle, Check, ExternalLink, X, CalendarDays, Download } from "lucide-react"
 
-export default function CompanyInfo({ companyId, isSubscriptionActive = true }) { // openAndroidApp prop olib tashlandi, chunki endi to'g'ridan-to'g'ri ishlatilmaydi
+// isSubscriptionActive propini olib qolamiz, chunki u UI ni o'zgartirish uchun ishlatiladi
+// openAndroidApp propini olib tashladik, chunki endi to'g'ridan-to'g'ri chaqirilmaydi
+export default function CompanyInfo({ companyId, isSubscriptionActive = true }) {
   const [companyData, setCompanyData] = useState(null)
   const [employeeCount, setEmployeeCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("") // Fetch uchun ham error state qo'shildi
+  const [error, setError] = useState("") // Fetch va popup ichidagi xatolar uchun umumiy state
   const [showUpgradePopup, setShowUpgradePopup] = useState(false) // Popup ko'rsatish state'i
   const [latestAppLink, setLatestAppLink] = useState(null) // Eng so'nggi app linki uchun state
 
@@ -29,8 +31,11 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           .eq("id", companyId)
           .single()
 
-        if (companyError) throw companyError
-        if (!company) throw new Error(t("companyNotFound")) // Translationga o'tkazildi
+        if (companyError) {
+          console.error("Supabase error fetching company:", companyError)
+          throw companyError // Xato qaytarsa, keyingi qadamlarni to'xtatish
+        }
+        if (!company) throw new Error(t("companyNotFound")) // Qo'shimcha tekshiruv, translationga o'tkazildi
 
         // 2. Xodimlar sonini olish
         const { count, error: countError } = await supabase
@@ -39,9 +44,13 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           .eq("company_id", companyId)
           .eq("is_super_admin", false) // Faqat xodimlarni hisoblash
 
-        if (countError) throw countError
+        if (countError) {
+          console.error("Supabase error fetching employee count:", countError)
+          throw countError // Xato qaytarsa, keyingi qadamlarni to'xtatish
+        }
 
         // 3. Eng so'nggi dastur yuklab olish linkini olish
+        // maybeSingle() ishlatamiz, chunki 'updates' jadvali bo'sh bo'lishi mumkin
         const { data: updateData, error: updateError } = await supabase
           .from("updates")
           .select("update_link")
@@ -49,27 +58,30 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           .limit(1) // Eng birinchi (eng katta number) qatorni olish
           .maybeSingle() // Faqat bitta natija kutiladi, topilmasa null qaytaradi
 
-        // Agar xato bo'lsa (lekin topilmasa PGRST116), linkni null qoldiramiz
+        // updateError.code === "PGRST116" - bu "no rows found" degani, bu holda xato emas
         if (updateError && updateError.code !== "PGRST116") {
-           console.error("Error fetching latest update link:", updateError);
-           // Linkni null qoldiramiz, lekin asosiy ma'lumotlar yuklandi
-           setLatestAppLink(null);
+          console.error("Error fetching latest update link:", updateError)
+          // Linkni null qoldiramiz, lekin asosiy ma'lumotlar yuklandi, shuning uchun umumiy xato stateiga yozmaymiz
+          setLatestAppLink(null)
         } else if (updateData && updateData.update_link) {
-           setLatestAppLink(updateData.update_link); // Link topilsa saqlash
+          setLatestAppLink(updateData.update_link) // Link topilsa saqlash
         } else {
-           setLatestAppLink(null); // Link topilmasa null qilish
+          setLatestAppLink(null) // Link topilmasa null qilish
         }
 
+        console.log("Latest update link fetched:", updateData?.update_link)
 
+        // Hamma ma'lumotlar muvaffaqiyatli olindi
         setCompanyData(company)
         setEmployeeCount(count || 0)
-
+        // setError(""); // Muvaffaqiyatli bo'lsa, xatoni tozalash (agar oldin bo'lgan bo'lsa)
       } catch (error) {
-        console.error("Error fetching company data:", error)
-        setError(error.message || t("errorFetchingData")) // Xatoni statega yozish
-        setCompanyData(null) // Xatolik bo'lsa, datani null qilish
-        setEmployeeCount(0); // Xatolik bo'lsa, countni 0 qilish
-        setLatestAppLink(null); // Xatolik bo'lsa, linkni null qilish
+        console.error("Overall Error during fetch:", error)
+        // Xatolik ro'y bersa, barcha datani null/0 qilish va xato xabarini saqlash
+        setError(error.message || t("errorFetchingData"))
+        setCompanyData(null)
+        setEmployeeCount(0)
+        setLatestAppLink(null) // Fetch xatosida linkni ham null qilish
       } finally {
         setLoading(false)
       }
@@ -79,10 +91,10 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       fetchCompanyDataAndLink()
     } else {
       setLoading(false) // Agar companyId yo'q bo'lsa, loadingni to'xtatish
-      setError(t("noCompanyIdProvided")); // companyId yo'q bo'lsa xato berish
-      setCompanyData(null);
-      setEmployeeCount(0);
-      setLatestAppLink(null);
+      setError(t("noCompanyIdProvided")) // companyId yo'q bo'lsa xato berish
+      setCompanyData(null)
+      setEmployeeCount(0)
+      setLatestAppLink(null)
     }
   }, [companyId, supabase, t]) // t ham dependencyga qo'shildi, chunki error message undan foydalanadi
 
@@ -94,7 +106,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       case 2:
         return t("premium")
       case 3:
-        return t("bigplan")
+        return t("bigplan") // plans/bigplan
       default:
         return t("basic") // Default to basic instead of free
     }
@@ -108,7 +120,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       case 2:
         return 125
       case 3:
-        return "∞"
+        return "∞" // Infinity
       default:
         return 5 // Default to basic limit
     }
@@ -131,52 +143,70 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     }))
   }
 
+  // Replace the entire openAndroidApp function with this new showRenewalPopup function
+  // and update the button onClick handler to use this new function
+
+  // Replace this function:
+  // const openAndroidApp = () => {
+  //   // Direct link to the app without Play Market
+  //   window.location.href = "davomat://open"
+  // }
+
+  // With this function:
+  const showRenewalPopup = () => {
+    setShowUpgradePopup(true)
+    setError("") // Clear any previous errors
+  }
+
   // Popupni ochish funksiyasi
   const handleUpgradeClick = () => {
-    setShowUpgradePopup(true);
-     // Popup ochilganda ichidagi xatoni tozalash
-    // setError(""); // Agar popup ichida o'ziga xos xato bo'lmasa, buni ishlatishingiz mumkin
+    setShowUpgradePopup(true)
+    // Popup ochilganda ichidagi xatoni tozalash (agar oldingi urinishdan qolgan bo'lsa)
+    setError("") // Popup ichidagi error state'ini tozalaymiz
   }
 
   // Popupni yopish funksiyasi
   const handleClosePopup = () => {
-    setShowUpgradePopup(false);
-    setError(""); // Popup yopilganda xatoni tozalash
+    setShowUpgradePopup(false)
+    setError("") // Popup yopilganda xatoni tozalash
   }
 
   // Yuklab olish tugmasi bosilganda
   const handleDownloadClick = () => {
     if (latestAppLink) {
-      window.open(latestAppLink, '_blank'); // Linkni yangi tabda ochish
-      // handleClosePopup(); // Xohlasangiz yuklab olish linki ochilgandan keyin popupni yopishingiz mumkin
+      console.log("Opening download link:", latestAppLink)
+      window.open(latestAppLink, "_blank") // Linkni yangi tabda ochish
     } else {
-      // Agar link topilmagan bo'lsa, xato ko'rsatish
-      setError(t("downloadLinkNotAvailable")); // Bu xato popup ichida ko'rinadi
+      // Agar link topilmagan bo'lsa, xato ko'rsatish (popup ichida)
+      setError(t("downloadLinkNotAvailableMessage"))
+      console.error("Download link is not available.")
     }
   }
 
-
   if (loading) {
     return (
-      <div className="card flex items-center justify-center p-8 min-h-[300px]"> {/* min-h qo'shildi */}
+      <div className="card flex items-center justify-center p-8 min-h-[300px]">
+        {" "}
+        {/* min-h qo'shildi */}
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     )
   }
 
-   // Agar loading tugadi, error mavjud va companyData yo'q bo'lsa (ma'lumot yuklash umuman muvaffaqiyatsiz bo'ldi)
-   if (error && !companyData) {
-     return (
-       <div className="card p-8">
-         <p className="text-center text-red-500 dark:text-red-400">{error}</p>
-       </div>
-     );
-   }
+  // Agar loading tugadi, error mavjud va companyData yo'q bo'lsa (ma'lumot yuklash umuman muvaffaqiyatsiz bo'ldi)
+  // Bu holatda faqat xato xabarini ko'rsatamiz.
+  if (error && !companyData) {
+    return (
+      <div className="card p-8">
+        <p className="text-center text-red-500 dark:text-red-400">{error}</p>
+      </div>
+    )
+  }
 
-
-  // Agar loading tugadi, lekin companyData yo'q (masalan, companyId null bo'lsa va error set bo'lsa)
-  // Yuqoridagi shart xato bo'lganda ishlaydi, bu esa xato bo'lmasa ishlaydi.
-  // Bu kamdan-kam hol, lekin ehtiyot chorasi sifatida qoldirildi.
+  // Agar loading tugadi, error yo'q, lekin companyData ham yo'q (bu companyId mavjud emasligini tekshirgandagi holat bo'lishi mumkin)
+  // Yuqoridagi shart error bo'lganda ishlaydi. Bu shart esa error *yo'q* bo'lganda companyData mavjud emasligini tekshiradi.
+  // companyId null bo'lganda setError set qilinadi, shuning uchun bu blokga tushish kamdan-kam holat.
+  // Lekin ehtiyot chorasi sifatida qoldirildi.
   if (!companyData) {
     return (
       <div className="card p-8">
@@ -198,9 +228,9 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     <div className="card">
       <h3 className="text-xl font-semibold mb-6">{t("company")}</h3>
 
-      {/* General Error message (could be from initial fetch error or download link error attempt) */}
-      {/* Popup ichida alohida error handle qilingani sababli, bu asosan initial fetch xatosi uchun qoladi */}
-      {error && !showUpgradePopup && ( // Agar popup ochiq bo'lsa, errorni asosiy sahifada ko'rsatmaymiz
+      {/* General Error message (asosan initial fetch xatosi uchun) */}
+      {/* Agar popup ochiq bo'lsa, errorni asosiy sahifada ko'rsatmaymiz, chunki u popup ichida ko'rinadi */}
+      {error && !showUpgradePopup && (
         <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
           {error}
         </div>
@@ -220,7 +250,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           </div>
         </div>
       )}
-
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* Chap ustun */}
@@ -256,7 +285,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
                 ? `${subscriptionDuration} ${t("months")}`
                 : t("notSet")}
             </p>
-             {(subscriptionDuration === null || subscriptionDuration === undefined || subscriptionDuration <= 0) && (
+            {(subscriptionDuration === null || subscriptionDuration === undefined || subscriptionDuration <= 0) && (
               <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{t("durationNotSetWarning")}</p>
             )}
           </div>
@@ -312,12 +341,12 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
 
       {/* Tugmalar */}
       <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row gap-4">
-         {/* Tugma endi popupni ochadi */}
-         {/* isSubscriptionActive false bo'lsa 'renew' matni, aks holda 'upgrade' matni */}
-         <button onClick={handleUpgradeClick} className="btn btn-primary flex items-center justify-center gap-2">
-           {isSubscriptionActive ? t("upgradeSubscription") : t("renewSubscription")}
-           <ExternalLink className="h-4 w-4" /> {/* Bu icon pop upga olib borishni bildiradi */}
-         </button>
+        {/* Tugma endi popupni ochadi */}
+        {/* isSubscriptionActive false bo'lsa 'renew' matni, aks holda 'upgrade' matni */}
+        <button onClick={showRenewalPopup} className="btn btn-primary flex items-center justify-center gap-2">
+          {isSubscriptionActive ? t("upgradeSubscription") : t("renewSubscription")}
+          <ExternalLink className="h-4 w-4" /> {/* Bu icon pop upga olib borishni bildiradi */}
+        </button>
         <a
           href="https://t.me/modderboy"
           target="_blank"
@@ -329,96 +358,53 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       </div>
 
       {/* === Upgrade/Renew Popup === */}
+      {/* Popup ko'rsatish showUpgradePopup state'iga bog'liq */}
       {showUpgradePopup && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-               {/* Close button */}
-               <button
-                  onClick={handleClosePopup}
-                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-200"
-                  aria-label={t("close")}
-               >
-                  <X className="h-5 w-5" />
-               </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+            {/* Close button */}
+            <button
+              onClick={handleClosePopup}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              aria-label={t("close")}
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-               {/* Popup Content */}
-               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t("upgradePopupTitle")}</h3>
+            {/* Popup Content */}
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {t("renewSubscriptionTitle")}
+            </h3>
 
-               {/* Popup message */}
-               <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
-                 {t("upgradePopupMessage")}
-               </p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">{t("renewSubscriptionMessage")}</p>
 
-               {/* Error message within popup */}
-               {error && ( // Popup ichida ham xato ko'rsatish
-                 <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400 text-sm">
-                   {error}
-                 </div>
-               )}
+            {/* Error message within popup (specifically for download link issue) */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400 text-sm">
+                {error}
+              </div>
+            )}
 
-               {/* Download Button */}
-               {/* Link mavjud bo'lgandagina tugmani ko'rsatish */}
-               {latestAppLink ? (
-                 <button
-                    onClick={handleDownloadClick}
-                    className="btn btn-primary w-full flex items-center justify-center gap-2"
-                 >
-                    <Download className="h-5 w-5" />
-                    {t("downloadAppButton")}
-                 </button>
-               ) : (
-                  // Agar link topilmagan bo'lsa, boshqa xabar ko'rsatish
-                  <p className="text-sm text-yellow-700 dark:text-yellow-400 text-center">
-                     {t("downloadLinkNotAvailableMessage")} {/* Yangi translation key */}
-                  </p>
-               )}
-
-            </div>
-         </div>
+            {/* Download Button */}
+            {/* Link mavjud bo'lgandagina tugmani ko'rsatish */}
+            {latestAppLink ? (
+              <button
+                onClick={handleDownloadClick}
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
+              >
+                <Download className="h-5 w-5" />
+                {t("downloadAppButton")}
+              </button>
+            ) : (
+              // Agar link topilmagan bo'lsa, boshqa xabar ko'rsatish
+              <p className="text-sm text-yellow-700 dark:text-yellow-400 text-center">
+                {t("downloadLinkNotAvailableMessage")} {/* Yangi translation key */}
+              </p>
+            )}
+          </div>
+        </div>
       )}
-       {/* === End Upgrade/Renew Popup === */}
-
+      {/* === End Upgrade/Renew Popup === */}
     </div>
   )
 }
-
-// ==========================================================================
-// Add these new translation keys to your language context file (e.g., en.json, uz.json)
-// ==========================================================================
-
-// "companyNotFound": "Company not found.", // New error message
-// "errorFetchingData": "Error loading data. Please try again.", // Generic fetch error
-// "noCompanyIdProvided": "Company ID not provided.", // New error message
-// "durationNotSetWarning": "Subscription duration is not set.", // Warning if duration is missing
-"upgradePopupTitle": "Upgrade or Renew Subscription", // Title for the popup
- "upgradePopupMessage": "To upgrade or renew your subscription plan, please open the Attendance app on your Android device and use the 'Upgrade Subscription' button inside the app.", // Popup message with instructions
- "downloadAppButton": "Download Attendance App", // Text for the download button
- "downloadLinkNotAvailable": "App download link is not available.", // Error if link fetch fails (used internally/dev console)
-// "downloadLinkNotAvailableMessage": "The app download link is currently unavailable. Please contact support.", // Message in popup if link is missing
-// "close": "Close", // Aria label for close button
-
-
-// And ensure existing keys are present:
-// "basic": "Basic",
-// "premium": "Premium",
-// "bigplan": "Big Plan", // Or whatever you call plan 3
-// "company": "Company",
-// "companyName": "Company Name",
-// "planLevel": "Plan Level",
-// "subscriptionDuration": "Subscription Duration",
-// "months": "months", // Make sure pluralization is handled if needed, otherwise simple 'months' is fine
-// "notSet": "Not Set",
-// "employeeLimit": "Employee Limit",
-// "usedEmployees": "used employees",
-// "features": "Features",
-// "gpsTracking": "GPS Tracking",
-// "basicReports": "Basic Reports",
-// "excelExports": "Excel Exports",
-// "advancedAntiSpoofing": "Advanced Anti-Spoofing",
-// "customPlan": "Custom Plan",
-// "avatarUpload": "Avatar Upload",
-// "upgradeSubscription": "Upgrade Subscription",
-// "renewSubscription": "Renew Subscription",
-// "contactSupport": "Contact Support",
-// "subscriptionInactive": "Subscription Inactive",
-// "subscriptionInactiveMessage": "Your company's subscription is currently inactive. Please renew to continue using all features.",

@@ -549,6 +549,21 @@ const translations: Translations = {
     en: "Welcome to the Attendance System!",
     ru: "Добро пожаловать в систему учета посещаемости!",
   },
+  renewSubscriptionTitle: {
+    uz: "Obunani yangilash",
+    en: "Renew Subscription",
+    ru: "Обновить подписку",
+  },
+  renewSubscriptionMessage: {
+    uz: "Obunangizni yangilash uchun Davomat ilovasini ochib, 'Obunani yangilash' tugmasini bosing. Ilova o'rnatilmagan bo'lsa, quyidagi tugma orqali yuklab oling.",
+    en: "To renew your subscription, open the Attendance application and click the 'Renew Subscription' button. If the application is not installed, download it using the button below.",
+    ru: "Чтобы обновить подписку, откройте приложение Учета посещаемости и нажмите кнопку 'Обновить подписку'. Если приложение не установлено, загрузите его, используя кнопку ниже.",
+  },
+  downloadAppButton: {
+    uz: "Ilovani yuklab olish",
+    en: "Download Application",
+    ru: "Скачать приложение",
+  },
 }
 
 type LanguageContextType = {
