@@ -595,9 +595,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       // Upload the file to Supabase Storage
       const fileExt = file.name.split(".").pop()
       const fileName = `${employeeId}.${fileExt}`
-      const filePath = `users/avatars/${fileName}`
+      const filePath = `avatars/${fileName}`
 
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, {
+      const { error: uploadError } = await supabase.storage.from("users").upload(filePath, file, {
         upsert: true,
         contentType: file.type,
       })
