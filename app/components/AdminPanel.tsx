@@ -607,7 +607,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       // Get the public URL
       const {
         data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath)
+      } = supabase.storage.from("users").getPublicUrl(filePath)
 
       // Update the user record with the avatar URL
       const { error: updateError } = await supabase
