@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --secondary-color: #0ea5e9;
+  --background-color: #f9fafb;
+  --card-background: #ffffff;
+  --text-color: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --info-color: #3b82f6;
+}
+
+.dark {
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
+  --secondary-color: #0ea5e9;
+  --background-color: #111827;
+  --card-background: #1f2937;
+  --text-color: #f9fafb;
+  --text-secondary: #d1d5db;
+  --border-color: #374151;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --info-color: #3b82f6;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@layer components {
+  .btn {
+    @apply font-medium py-2 px-4 rounded-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-opacity-50 shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-400;
+  }
+
+  .btn-secondary {
+    @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400;
+  }
+
+  .btn-success {
+    @apply bg-green-500 text-white hover:bg-green-600 focus:ring-green-500 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-400;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-400;
+  }
+
+  .btn-outline {
+    @apply border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800;
+  }
+
+  .input {
+    @apply block w-full px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-400 dark:focus:border-indigo-400;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 shadow-md rounded-xl p-6 border border-gray-200 dark:border-gray-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300;
+  }
+
+  .table-container {
+    @apply overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700;
+  }
+
+  .table {
+    @apply min-w-full divide-y divide-gray-200 dark:divide-gray-700;
+  }
+
+  .table-header {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+
+  .table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300;
+  }
+
+  .table-body {
+    @apply bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700;
+  }
+
+  .table-row {
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+  }
+
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300;
+  }
+
+  .sidebar {
+    @apply fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-30 transform transition-transform duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700;
+  }
+
+  .sidebar-collapsed {
+    @apply -translate-x-full md:translate-x-0 md:w-20;
+  }
+
+  .sidebar-expanded {
+    @apply translate-x-0;
+  }
+
+  .main-content {
+    @apply ml-0 md:ml-64 transition-all duration-300 ease-in-out;
+  }
+
+  .main-content-sidebar-collapsed {
+    @apply md:ml-20;
+  }
+
+  .navbar {
+    @apply sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700;
+  }
+}
