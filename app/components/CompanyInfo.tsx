@@ -70,7 +70,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
   const getEmployeeLimit = (planValue) => {
     switch (planValue) {
       case 1:
-        return 25
+        return 5
       case 2:
         return 125
       case 3:
