@@ -88,6 +88,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true, op
       { name: t("excelExports"), available: [1, 2, 3] },
       { name: t("advancedAntiSpoofing"), available: [2, 3] },
       { name: t("customPlan"), available: [3] },
+      { name: t("avatarUpload"), available: [2, 3] }, // Added avatar upload feature for premium plans
     ]
 
     return features.map((feature) => ({
@@ -242,7 +243,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true, op
             <div className="flex flex-col">
               <div className="flex items-center mb-1">
                 <span className="text-lg font-semibold">
-                  {employeeCount} / {employeeLimit === Number.POSITIVE_INFINITY ? "∞" : employeeLimit}
+                  {employeeCount} / {employeeLimit === "∞" ? "∞" : employeeLimit}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{t("usedEmployees")}</span>
               </div>

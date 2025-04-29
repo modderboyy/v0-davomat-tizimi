@@ -9,7 +9,7 @@ import EmployeeChart from "./EmployeeChart"
 import { ThemeToggle } from "./ThemeToggle"
 import { registerLocale, setDefaultLocale } from "react-datepicker"
 import uz from "date-fns/locale/uz"
-import { Edit2, Check, X, Download, Save, AlertTriangle, HelpCircle } from "lucide-react"
+import { Edit2, Check, X, Download, Save, AlertTriangle, HelpCircle, Trash2, UserPlus, Users } from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
 import PieChart from "./PieChart"
 import { useLanguage } from "../context/LanguageContext"
@@ -18,6 +18,7 @@ import Sidebar from "./Sidebar"
 import AddEmployeeForm from "./AddEmployeeForm"
 import CompanyInfo from "./CompanyInfo"
 import { useDynamicIsland } from "./DynamicIsland"
+import AutoEmployeeForm from "./AutoEmployeeForm"
 
 registerLocale("uz", uz)
 setDefaultLocale("uz")
@@ -33,10 +34,12 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [editName, setEditName] = useState("")
   const [showAddEmployee, setShowAddEmployee] = useState(false)
+  const [showAutoEmployee, setShowAutoEmployee] = useState(false)
   const [companyData, setCompanyData] = useState(null)
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [employeeLimit, setEmployeeLimit] = useState(0)
+  const [isPremium, setIsPremium] = useState(false)
   const supabase = createClientComponentClient()
   const { t, language } = useLanguage()
   const { showNotification } = useDynamicIsland()
@@ -112,6 +115,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       const isActive = !(data.plan === 0 || data.subscription === 0)
       setIsSubscriptionActive(isActive)
 
+      // Check if premium or higher
+      setIsPremium(data.plan >= 2)
+
       // Set employee limit based on plan
       setEmployeeLimit(getEmployeeLimit(data.plan))
     } catch (error) {
@@ -145,7 +151,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
     const { data, error } = await supabase
       .from("users")
-      .select("lavozim, name, email, id")
+      .select("lavozim, name, email, id, avatar")
       .eq("is_super_admin", false)
       .eq("company_id", companyId)
 
@@ -257,10 +263,10 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     window.open("https://t.me/modderboy", "_blank")
   }
 
-  // Open Android app
+  // Open Android app directly
   const openAndroidApp = () => {
-    // Try to open the Android app
-    window.location.href = "intent://com.modderboy.davomat#Intent;scheme=https;package=com.modderboy.davomat;end"
+    // Direct link to the app without Play Market
+    window.location.href = "davomat://open"
   }
 
   useEffect(() => {
@@ -413,14 +419,86 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     }
   }
 
+  const handleDeleteEmployee = async (employeeId) => {
+    if (!isSubscriptionActive) return
+
+    try {
+      // First check if this employee has attendance records
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("davomat")
+        .select("id")
+        .eq("xodim_id", employeeId)
+        .limit(1)
+
+      if (attendanceError) throw attendanceError
+
+      // If there are attendance records, ask for confirmation
+      if (attendanceData && attendanceData.length > 0) {
+        const confirmed = window.confirm(t("deleteEmployeeWithRecordsConfirmation"))
+        if (!confirmed) return
+      }
+
+      // Delete the employee
+      const { error } = await supabase.from("users").delete().eq("id", employeeId).eq("company_id", companyId)
+
+      if (error) throw error
+
+      showNotification("success", t("employeeDeletedSuccessfully"))
+      fetchEmployeeDetails()
+      fetchEmployees()
+    } catch (error) {
+      console.error("Error deleting employee:", error)
+      showNotification("error", t("errorDeletingEmployee"))
+    }
+  }
+
   const handleEmployeeAdded = () => {
     fetchEmployees()
     fetchEmployeeDetails()
     setShowAddEmployee(false)
+    setShowAutoEmployee(false)
     showNotification("success", "Xodim muvaffaqiyatli qo'shildi")
 
     // Check for excess employees after adding
     removeExcessEmployees()
+  }
+
+  const handleUploadAvatar = async (employeeId, file) => {
+    if (!isSubscriptionActive || !isPremium) return
+
+    try {
+      // Upload the file to Supabase Storage
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${employeeId}.${fileExt}`
+      const filePath = `users/avatar/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      })
+
+      if (uploadError) throw uploadError
+
+      // Get the public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath)
+
+      // Update the user record with the avatar URL
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ avatar: publicUrl })
+        .eq("id", employeeId)
+        .eq("company_id", companyId)
+
+      if (updateError) throw updateError
+
+      showNotification("success", t("avatarUpdatedSuccessfully"))
+      fetchEmployeeDetails()
+    } catch (error) {
+      console.error("Error uploading avatar:", error)
+      showNotification("error", t("errorUploadingAvatar"))
+    }
   }
 
   // Subscription inactive message
@@ -430,16 +508,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
         <h3 className="text-xl font-bold mb-2">{t("subscriptionInactive")}</h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{t("subscriptionInactiveMessage")}</p>
-        <a
-          href="#"
-          className="btn btn-primary"
-          onClick={(e) => {
-            e.preventDefault()
-            openAndroidApp()
-          }}
-        >
+        <button onClick={openAndroidApp} className="btn btn-primary">
           {t("renewSubscription")}
-        </a>
+        </button>
       </div>
     </div>
   )
@@ -592,9 +663,41 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <h3 className="text-xl font-semibold mb-4 md:mb-0">{t("employees")}</h3>
           <div className="flex flex-col sm:flex-row gap-3">
-            <button onClick={() => setShowAddEmployee(!showAddEmployee)} className="btn btn-primary">
-              {showAddEmployee ? t("employees") : t("addEmployee")}
-            </button>
+            {!showAddEmployee && !showAutoEmployee && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowAddEmployee(true)
+                    setShowAutoEmployee(false)
+                  }}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {t("addEmployee")}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAutoEmployee(true)
+                    setShowAddEmployee(false)
+                  }}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  {t("autoAddEmployees")}
+                </button>
+              </>
+            )}
+            {(showAddEmployee || showAutoEmployee) && (
+              <button
+                onClick={() => {
+                  setShowAddEmployee(false)
+                  setShowAutoEmployee(false)
+                }}
+                className="btn btn-outline"
+              >
+                {t("cancel")}
+              </button>
+            )}
 
             {/* Employee limit indicator */}
             <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md">
@@ -607,6 +710,14 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
         {showAddEmployee ? (
           <AddEmployeeForm onEmployeeAdded={handleEmployeeAdded} companyId={companyId} />
+        ) : showAutoEmployee ? (
+          <AutoEmployeeForm
+            onEmployeeAdded={handleEmployeeAdded}
+            companyId={companyId}
+            companyName={companyData?.company_name || ""}
+            currentEmployeeCount={employeeDetails.length}
+            employeeLimit={employeeLimit}
+          />
         ) : (
           <div className="table-container">
             <table className="table">
@@ -615,6 +726,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                   <th className="table-header-cell">{t("position")}</th>
                   <th className="table-header-cell">{t("name")}</th>
                   <th className="table-header-cell">{t("email")}</th>
+                  {isPremium && <th className="table-header-cell">{t("avatar")}</th>}
                   <th className="table-header-cell">{t("actions")}</th>
                 </tr>
               </thead>
@@ -635,6 +747,34 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                       )}
                     </td>
                     <td className="table-cell">{employee.email}</td>
+                    {isPremium && (
+                      <td className="table-cell">
+                        <div className="flex items-center gap-2">
+                          {employee.avatar && (
+                            <div className="w-10 h-10 rounded-full overflow-hidden">
+                              <img
+                                src={employee.avatar || "/placeholder.svg"}
+                                alt={employee.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <label className="btn btn-sm btn-outline cursor-pointer">
+                            {employee.avatar ? t("change") : t("upload")}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadAvatar(employee.id, e.target.files[0])
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </td>
+                    )}
                     <td className="table-cell">
                       {editingEmployee?.email === employee.email ? (
                         <div className="flex gap-2">
@@ -650,13 +790,22 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => handleEditStart(employee)}
-                          className="btn btn-primary p-2"
-                          title={t("edit")}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditStart(employee)}
+                            className="btn btn-primary p-2"
+                            title={t("edit")}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEmployee(employee.id)}
+                            className="btn btn-danger p-2"
+                            title={t("delete")}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -379,6 +379,131 @@ const translations: Translations = {
     en: "Error updating employee details after signup",
     ru: "Ошибка при обновлении данных сотрудника после регистрации",
   },
+  delete: {
+    uz: "O'chirish",
+    en: "Delete",
+    ru: "Удалить",
+  },
+  cancel: {
+    uz: "Bekor qilish",
+    en: "Cancel",
+    ru: "Отмена",
+  },
+  employeeDeletedSuccessfully: {
+    uz: "Xodim muvaffaqiyatli o'chirildi",
+    en: "Employee deleted successfully",
+    ru: "Сотрудник успешно удален",
+  },
+  errorDeletingEmployee: {
+    uz: "Xodimni o'chirishda xatolik yuz berdi",
+    en: "Error deleting employee",
+    ru: "Ошибка при удалении сотрудника",
+  },
+  deleteEmployeeWithRecordsConfirmation: {
+    uz: "Bu xodimning davomat ma'lumotlari mavjud. Xodimni o'chirishni istaysizmi?",
+    en: "This employee has attendance records. Do you want to delete the employee?",
+    ru: "У этого сотрудника есть записи о посещаемости. Вы хотите удалить сотрудника?",
+  },
+  autoAddEmployees: {
+    uz: "Avto xodim qo'shish",
+    en: "Auto Add Employees",
+    ru: "Автоматическое добавление сотрудников",
+  },
+  addEmployees: {
+    uz: "Xodimlarni qo'shish",
+    en: "Add Employees",
+    ru: "Добавить сотрудников",
+  },
+  maxEmployeesToAdd: {
+    uz: "Qo'shish mumkin bo'lgan maksimal xodimlar soni",
+    en: "Maximum employees to add",
+    ru: "Максимальное количество сотрудников для добавления",
+  },
+  autoEmployeeInfo: {
+    uz: "Avto xodim qo'shish haqida ma'lumot",
+    en: "Auto Employee Information",
+    ru: "Информация об автоматическом добавлении сотрудников",
+  },
+  autoEmployeeNameFormat: {
+    uz: "Xodim nomi: 'Xodim 1', 'Xodim 2', ...",
+    en: "Employee name: 'Employee 1', 'Employee 2', ...",
+    ru: "Имя сотрудника: 'Сотрудник 1', 'Сотрудник 2', ...",
+  },
+  autoEmployeeEmailFormat: {
+    uz: "Email: '{company}1@modderboy.uz', '{company}2@modderboy.uz', ...",
+    en: "Email: '{company}1@modderboy.uz', '{company}2@modderboy.uz', ...",
+    ru: "Email: '{company}1@modderboy.uz', '{company}2@modderboy.uz', ...",
+  },
+  autoEmployeePasswordFormat: {
+    uz: "Parol: Tasodifiy parol generatsiya qilinadi",
+    en: "Password: A random password will be generated",
+    ru: "Пароль: Будет сгенерирован случайный пароль",
+  },
+  invalidEmployeeCount: {
+    uz: "Noto'g'ri xodimlar soni",
+    en: "Invalid employee count",
+    ru: "Неверное количество сотрудников",
+  },
+  employeeCountExceedsLimit: {
+    uz: "Xodimlar soni limitdan oshib ketdi. Maksimal: {max}",
+    en: "Employee count exceeds limit. Maximum: {max}",
+    ru: "Количество сотрудников превышает лимит. Максимум: {max}",
+  },
+  employeesAddedSuccessfully: {
+    uz: "{count} ta xodim muvaffaqiyatli qo'shildi",
+    en: "{count} employees added successfully",
+    ru: "{count} сотрудников успешно добавлено",
+  },
+  noEmployeesAdded: {
+    uz: "Hech qanday xodim qo'shilmadi",
+    en: "No employees were added",
+    ru: "Сотрудники не были добавлены",
+  },
+  errorAddingEmployees: {
+    uz: "Xodimlarni qo'shishda xatolik yuz berdi",
+    en: "Error adding employees",
+    ru: "Ошибка при добавлении сотрудников",
+  },
+  employee: {
+    uz: "Xodim",
+    en: "Employee",
+    ru: "Сотрудник",
+  },
+  defaultPosition: {
+    uz: "Oddiy xodim",
+    en: "Regular Employee",
+    ru: "Обычный сотрудник",
+  },
+  avatar: {
+    uz: "Avatar",
+    en: "Avatar",
+    ru: "Аватар",
+  },
+  upload: {
+    uz: "Yuklash",
+    en: "Upload",
+    ru: "Загрузить",
+  },
+  change: {
+    uz: "O'zgartirish",
+    en: "Change",
+    ru: "Изменить",
+  },
+  avatarUpdatedSuccessfully: {
+    uz: "Avatar muvaffaqiyatli yangilandi",
+    en: "Avatar updated successfully",
+    ru: "Аватар успешно обновлен",
+  },
+  errorUploadingAvatar: {
+    uz: "Avatarni yuklashda xatolik yuz berdi",
+    en: "Error uploading avatar",
+    ru: "Ошибка при загрузке аватара",
+  },
+  avatarUpload: {
+    uz: "Avatar yuklash",
+    en: "Avatar Upload",
+    ru: "Загрузка аватара",
+  },
 }
 
 type LanguageContextType = {
