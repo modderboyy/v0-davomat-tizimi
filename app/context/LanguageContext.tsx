@@ -564,6 +564,336 @@ const translations: Translations = {
     en: "Download Application",
     ru: "Скачать приложение",
   },
+  companyInfo: {
+    uz: "Kompaniya ma'lumotlari",
+    en: "Company Information",
+    ru: "Информация о компании",
+  },
+  location: {
+    uz: "Joylashuv",
+    en: "Location",
+    ru: "Местоположение",
+  },
+  locationImportanceMessage: {
+    uz: "Joylashuv ma'lumotlari xodimlarning ish joyida ekanligini tekshirish uchun muhimdir. Iltimos, kompaniyangizning aniq joylashuvini kiriting.",
+    en: "Location data is crucial for verifying that employees are at their workplace. Please enter the exact location of your company.",
+    ru: "Данные о местоположении необходимы для проверки нахождения сотрудников на рабочем месте. Пожалуйста, укажите точное местоположение вашей компании.",
+  },
+  latitude: {
+    uz: "Kenglik",
+    en: "Latitude",
+    ru: "Широта",
+  },
+  longitude: {
+    uz: "Uzunlik",
+    en: "Longitude",
+    ru: "Долгота",
+  },
+  workingRadius: {
+    uz: "Ish radiusi",
+    en: "Working Radius",
+    ru: "Рабочий радиус",
+  },
+  meters: {
+    uz: "metr",
+    en: "meters",
+    ru: "метров",
+  },
+  editLocation: {
+    uz: "Joylashuvni tahrirlash",
+    en: "Edit Location",
+    ru: "Редактировать местоположение",
+  },
+  setLocation: {
+    uz: "Joylashuvni belgilash",
+    en: "Set Location",
+    ru: "Установить местоположение",
+  },
+  locationGuide: {
+    uz: "Joylashuv bo'yicha qo'llanma",
+    en: "Location Guide",
+    ru: "Руководство по местоположению",
+  },
+  noLocationSet: {
+    uz: "Joylashuv belgilanmagan",
+    en: "No location set",
+    ru: "Местоположение не установлено",
+  },
+  locationGuideImportance: {
+    uz: "Aniq joylashuv ma'lumotlari xodimlarning ish joyida ekanligini tekshirish uchun muhimdir. Bu qo'llanma sizga Google Maps orqali koordinatalarni olishni ko'rsatadi.",
+    en: "Accurate location data is essential for verifying employee presence at the workplace. This guide will show you how to obtain coordinates using Google Maps.",
+    ru: "Точные данные о местоположении необходимы для проверки присутствия сотрудников на рабочем месте. Это руководство покажет вам, как получить координаты с помощью Google Maps.",
+  },
+  howToGetCoordinates: {
+    uz: "Google Maps orqali koordinatalarni olish",
+    en: "How to Get Coordinates from Google Maps",
+    ru: "Как получить координаты из Google Maps",
+  },
+  locationGuideStep1: {
+    uz: "Google Maps veb-saytini oching (maps.google.com) yoki Google Maps ilovasini ishga tushiring.",
+    en: "Open the Google Maps website (maps.google.com) or launch the Google Maps app.",
+    ru: "Откройте веб-сайт Google Maps (maps.google.com) или запустите приложение Google Maps.",
+  },
+  locationGuideStep2: {
+    uz: "Kompaniyangiz joylashgan joyni qidiring yoki xaritada toping.",
+    en: "Search for your company's location or find it on the map.",
+    ru: "Найдите местоположение вашей компании или найдите его на карте.",
+  },
+  locationGuideStep3: {
+    uz: "Veb-saytda: Aniq nuqtani belgilash uchun xaritada o'ng tugmani bosing va 'Bu yerda nima?' ni tanlang. Ilovada: Kerakli joyni bosib turing.",
+    en: "On the website: Right-click on the exact point on the map and select 'What's here?'. In the app: Press and hold on the desired location.",
+    ru: "На веб-сайте: Щелкните правой кнопкой мыши на точное место на карте и выберите 'Что здесь?'. В приложении: Нажмите и удерживайте нужное место.",
+  },
+  locationGuideStep4: {
+    uz: "Pastki qismda yoki ma'lumot kartasida koordinatalar ko'rsatiladi (masalan, 41.2995, 69.2401).",
+    en: "The coordinates will be displayed at the bottom or in the info card (e.g., 41.2995, 69.2401).",
+    ru: "Координаты будут отображаться внизу или в информационной карточке (например, 41.2995, 69.2401).",
+  },
+  locationGuideStep5: {
+    uz: "Bu raqamlarni nusxalang va tegishli maydonlarga kiriting.",
+    en: "Copy these numbers and enter them in the appropriate fields.",
+    ru: "Скопируйте эти числа и введите их в соответствующие поля.",
+  },
+  aboutWorkingRadius: {
+    uz: "Ish radiusi haqida",
+    en: "About Working Radius",
+    ru: "О рабочем радиусе",
+  },
+  workingRadiusExplanation: {
+    uz: "Ish radiusi - bu xodimlar davomat qayd etishi mumkin bo'lgan markaziy nuqta atrofidagi masofa (metrda). Kichikroq radius (masalan, 50-100 metr) aniqroq joylashuvni ta'minlaydi, kattaroq radius (200+ metr) esa kattaroq maydonni qamrab oladi. Kompaniyangiz binosi hajmiga qarab mos radiusni tanlang.",
+    en: "The working radius is the distance (in meters) around the central point where employees can register attendance. A smaller radius (e.g., 50-100 meters) ensures more precise location, while a larger radius (200+ meters) covers a wider area. Choose a radius appropriate to your company building size.",
+    ru: "Рабочий радиус - это расстояние (в метрах) вокруг центральной точки, где сотрудники могут регистрировать посещаемость. Меньший радиус (например, 50-100 метров) обеспечивает более точное местоположение, а больший радиус (200+ метров) охватывает более широкую область. Выберите радиус, соответствующий размеру здания вашей компании.",
+  },
+  distanceDescription: {
+    uz: "Xodimlar ish joyida ekanligini tekshirish uchun ishlatiladigan radius (metrda).",
+    en: "The radius (in meters) used to verify that employees are at the workplace.",
+    ru: "Радиус (в метрах), используемый для проверки нахождения сотрудников на рабочем месте.",
+  },
+  invalidCoordinates: {
+    uz: "Noto'g'ri koordinatalar. Iltimos, to'g'ri raqamlarni kiriting.",
+    en: "Invalid coordinates. Please enter valid numbers.",
+    ru: "Неверные координаты. Пожалуйста, введите правильные числа.",
+  },
+  invalidDistance: {
+    uz: "Noto'g'ri radius. Iltimos, musbat raqam kiriting.",
+    en: "Invalid radius. Please enter a positive number.",
+    ru: "Неверный радиус. Пожалуйста, введите положительное число.",
+  },
+  locationSavedSuccessfully: {
+    uz: "Joylashuv muvaffaqiyatli saqlandi",
+    en: "Location saved successfully",
+    ru: "Местоположение успешно сохранено",
+  },
+  errorSavingLocation: {
+    uz: "Joylashuvni saqlashda xatolik yuz berdi",
+    en: "Error saving location",
+    ru: "Ошибка при сохранении местоположения",
+  },
+  understood: {
+    uz: "Tushundim",
+    en: "Understood",
+    ru: "Понятно",
+  },
+  close: {
+    uz: "Yopish",
+    en: "Close",
+    ru: "Закрыть",
+  },
+  setupYourCompany: {
+    uz: "Kompaniyangizni sozlang",
+    en: "Set Up Your Company",
+    ru: "Настройте вашу компанию",
+  },
+  setupDescription: {
+    uz: "Kompaniyangizni sozlash uchun quyidagi qadamlarni bajaring",
+    en: "Follow these steps to set up your company",
+    ru: "Выполните следующие шаги для настройки вашей компании",
+  },
+  appearance: {
+    uz: "Ko'rinish",
+    en: "Appearance",
+    ru: "Внешний вид",
+  },
+  finish: {
+    uz: "Yakunlash",
+    en: "Finish",
+    ru: "Завершить",
+  },
+  companyNameDescription: {
+    uz: "Kompaniyangiz nomini kiriting. Bu nom tizimda ko'rsatiladi.",
+    en: "Enter your company name. This name will be displayed in the system.",
+    ru: "Введите название вашей компании. Это название будет отображаться в системе.",
+  },
+  enterCompanyName: {
+    uz: "Kompaniya nomini kiriting",
+    en: "Enter company name",
+    ru: "Введите название компании",
+  },
+  appearanceDescription: {
+    uz: "Tizimning ko'rinishini sozlang",
+    en: "Customize the appearance of the system",
+    ru: "Настройте внешний вид системы",
+  },
+  theme: {
+    uz: "Mavzu",
+    en: "Theme",
+    ru: "Тема",
+  },
+  toggleTheme: {
+    uz: "Mavzuni almashtirish",
+    en: "Toggle theme",
+    ru: "Переключить тему",
+  },
+  selectLanguage: {
+    uz: "Tilni tanlang",
+    en: "Select language",
+    ru: "Выберите язык",
+  },
+  locationImportanceWarning: {
+    uz: "Diqqat! Joylashuv ma'lumotlari xodimlarning ish joyida ekanligini tekshirish uchun muhimdir. Noto'g'ri ma'lumotlar kiritilsa, xodimlar davomat qayd eta olmasligi mumkin.",
+    en: "Attention! Location data is crucial for verifying that employees are at their workplace. If incorrect data is entered, employees may not be able to register attendance.",
+    ru: "Внимание! Данные о местоположении необходимы для проверки нахождения сотрудников на рабочем месте. Если введены неверные данные, сотрудники могут не иметь возможности зарегистрировать посещаемость.",
+  },
+  locationSetupDescription: {
+    uz: "Kompaniyangizning aniq joylashuvini kiriting. Bu ma'lumotlar xodimlarning ish joyida ekanligini tekshirish uchun ishlatiladi.",
+    en: "Enter the exact location of your company. This data will be used to verify that employees are at their workplace.",
+    ru: "Введите точное местоположение вашей компании. Эти данные будут использоваться для проверки нахождения сотрудников на рабочем месте.",
+  },
+  finishSetup: {
+    uz: "Sozlashni yakunlash",
+    en: "Finish Setup",
+    ru: "Завершить настройку",
+  },
+  finishSetupDescription: {
+    uz: "Kompaniyangiz sozlash jarayoni yakunlandi. Quyidagi ma'lumotlarni tekshiring va tasdiqlang.",
+    en: "Your company setup process is complete. Please review and confirm the following information.",
+    ru: "Процесс настройки вашей компании завершен. Пожалуйста, проверьте и подтвердите следующую информацию.",
+  },
+  setupSummary: {
+    uz: "Sozlash xulosasi",
+    en: "Setup Summary",
+    ru: "Сводка настройки",
+  },
+  previous: {
+    uz: "Oldingi",
+    en: "Previous",
+    ru: "Предыдущий",
+  },
+  next: {
+    uz: "Keyingi",
+    en: "Next",
+    ru: "Следующий",
+  },
+  saving: {
+    uz: "Saqlanmoqda...",
+    en: "Saving...",
+    ru: "Сохранение...",
+  },
+  completeSetup: {
+    uz: "Sozlashni yakunlash",
+    en: "Complete Setup",
+    ru: "Завершить настройку",
+  },
+  setupCompleted: {
+    uz: "Kompaniya sozlash muvaffaqiyatli yakunlandi",
+    en: "Company setup completed successfully",
+    ru: "Настройка компании успешно завершена",
+  },
+  errorCompletingSetup: {
+    uz: "Sozlashni yakunlashda xatolik yuz berdi",
+    en: "Error completing setup",
+    ru: "Ошибка при завершении настройки",
+  },
+  companyNameRequired: {
+    uz: "Kompaniya nomi kiritilishi shart",
+    en: "Company name is required",
+    ru: "Требуется название компании",
+  },
+  locationDataRequired: {
+    uz: "Joylashuv ma'lumotlari kiritilishi shart",
+    en: "Location data is required",
+    ru: "Требуются данные о местоположении",
+  },
+  errorFetchingCompanyData: {
+    uz: "Kompaniya ma'lumotlarini yuklashda xatolik yuz berdi",
+    en: "Error fetching company data",
+    ru: "Ошибка при загрузке данных компании",
+  },
+  light: {
+    uz: "Yorug'",
+    en: "Light",
+    ru: "Светлая",
+  },
+  dark: {
+    uz: "Qorong'i",
+    en: "Dark",
+    ru: "Темная",
+  },
+  uz: {
+    uz: "O'zbekcha",
+    en: "Uzbek",
+    ru: "Узбекский",
+  },
+  en: {
+    uz: "Inglizcha",
+    en: "English",
+    ru: "Английский",
+  },
+  ru: {
+    uz: "Ruscha",
+    en: "Russian",
+    ru: "Русский",
+  },
+  subscriptionDuration: {
+    uz: "Obuna muddati",
+    en: "Subscription Duration",
+    ru: "Срок подписки",
+  },
+  avatarUpload: {
+    uz: "Avatar yuklash",
+    en: "Avatar Upload",
+    ru: "Загрузка аватара",
+  },
+  scanQR: {
+    uz: "QR kodni skanerlang",
+    en: "Scan QR Code",
+    ru: "Сканировать QR-код",
+  },
+  scanQRDescription: {
+    uz: "Davomat qayd etish uchun QR kodni skanerlang",
+    en: "Scan the QR code to register attendance",
+    ru: "Отсканируйте QR-код для регистрации посещаемости",
+  },
+  scanning: {
+    uz: "Skanerlanmoqda...",
+    en: "Scanning...",
+    ru: "Сканирование...",
+  },
+  connectedTo: {
+    uz: "Ulangan tarmoq",
+    en: "Connected to",
+    ru: "Подключено к",
+  },
+  checkingWifi: {
+    uz: "Wi-Fi tekshirilmoqda...",
+    en: "Checking WiFi...",
+    ru: "Проверка WiFi...",
+  },
+  locationRequired: {
+    uz: "Joylashuv ma'lumotlari talab qilinadi",
+    en: "Location data is required",
+    ru: "Требуются данные о местоположении",
+  },
+  downloadLinkNotAvailableMessage: {
+    uz: "Yuklab olish havolasi mavjud emas. Iltimos, yordam uchun murojaat qiling.",
+    en: "Download link is not available. Please contact support for assistance.",
+    ru: "Ссылка для скачивания недоступна. Пожалуйста, обратитесь в службу поддержки за помощью.",
+  },
+  companyLocation: {
+    uz: "Kompaniya joylashuvi",
+    en: "Company Location",
+    ru: "Местоположение компании",
+  },
 }
 
 type LanguageContextType = {
@@ -586,6 +916,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem("language", language)
+    document.documentElement.setAttribute("lang", language)
   }, [language])
 
   const t = (key: string): string => {
