@@ -1,9 +1,9 @@
-import Auth from './components/Auth'
+import ClientAuthWrapper from "./components/ClientAuthWrapper"
 
 export default function Home() {
   return (
     <main>
-      <Auth />
+      <ClientAuthWrapper />
     </main>
   )
 }

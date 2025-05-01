@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(null)
   const [companyId, setCompanyId] = useState(null)
+  const [isNewCompany, setIsNewCompany] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -39,6 +40,21 @@ export default function Dashboard() {
           } else {
             setIsAdmin(data.is_super_admin)
             setCompanyId(data.company_id)
+
+            // Check if company is new and redirect to setup if needed
+            if (data.is_super_admin && data.company_id) {
+              const { data: companyData, error: companyError } = await supabase
+                .from("companies")
+                .select("new")
+                .eq("id", data.company_id)
+                .single()
+
+              if (!companyError && companyData && companyData.new === true) {
+                setIsNewCompany(true)
+                router.push("/setup")
+                return
+              }
+            }
           }
         } else {
           router.push("/")
