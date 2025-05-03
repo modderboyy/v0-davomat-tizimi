@@ -464,11 +464,6 @@ const translations: Translations = {
     en: "Error uploading avatar",
     ru: "Ошибка при загрузке аватара",
   },
-  avatarUpload: {
-    uz: "Avatar yuklash",
-    en: "Avatar Upload",
-    ru: "Загрузка аватара",
-  },
   dashboard: {
     uz: "Boshqaruv paneli",
     en: "Dashboard",
@@ -893,6 +888,46 @@ const translations: Translations = {
     uz: "Kompaniya joylashuvi",
     en: "Company Location",
     ru: "Местоположение компании",
+  },
+  qrCodes: {
+    uz: "QR Kodlar",
+    en: "QR Codes",
+    ru: "QR Коды",
+  },
+  arrivalQRCode: {
+    uz: "Kelish QR Kodi",
+    en: "Arrival QR Code",
+    ru: "QR-код прибытия",
+  },
+  departureQRCode: {
+    uz: "Ketish QR Kodi",
+    en: "Departure QR Code",
+    ru: "QR-код ухода",
+  },
+  downloadQRCode: {
+    uz: "QR kodni yuklab olish",
+    en: "Download QR Code",
+    ru: "Скачать QR-код",
+  },
+  loadingQRCodes: {
+    uz: "QR kodlar yuklanmoqda...",
+    en: "Loading QR codes...",
+    ru: "Загрузка QR-кодов...",
+  },
+  errorLoadingQRCodes: {
+    uz: "QR kodlarni yuklashda xatolik yuz berdi",
+    en: "Error loading QR codes",
+    ru: "Ошибка при загрузке QR-кодов",
+  },
+  noQRCodesFound: {
+    uz: "QR kodlar topilmadi",
+    en: "No QR codes found",
+    ru: "QR-коды не найдены",
+  },
+  printQRCode: {
+    uz: "QR kodni chop etish",
+    en: "Print QR Code",
+    ru: "Распечатать QR-код",
   },
 }
 

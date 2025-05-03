@@ -3,7 +3,18 @@
 import { useState, useEffect } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useLanguage } from "../context/LanguageContext"
-import { AlertTriangle, Check, ExternalLink, X, CalendarDays, Download, MapPin, Info, Edit2 } from "lucide-react"
+import {
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  X,
+  CalendarDays,
+  Download,
+  MapPin,
+  Info,
+  Edit2,
+  Printer,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function CompanyInfo({ companyId, isSubscriptionActive = true }) {
@@ -21,6 +32,9 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
   const [distance, setDistance] = useState("")
   const [isNewCompany, setIsNewCompany] = useState(false)
   const [activeTab, setActiveTab] = useState("info") // "info" yoki "location"
+  const [qrCodeData, setQrCodeData] = useState(null)
+  const [loadingQRCodes, setLoadingQRCodes] = useState(false)
+  const [qrCodeError, setQrCodeError] = useState("")
 
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
@@ -126,6 +140,101 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       setLocationData(null)
     }
   }, [companyId, supabase, t, router])
+
+  // Fetch QR code data when the QR codes tab is selected
+  useEffect(() => {
+    const fetchQRCodes = async () => {
+      if (activeTab !== "qrcodes" || !isSubscriptionActive) return
+
+      setLoadingQRCodes(true)
+      setQrCodeError("")
+
+      try {
+        const { data, error } = await supabase
+          .from("qrcodes")
+          .select("*")
+          .eq("id", "a13f425f-9da9-43f2-86c9-0da0763110cb")
+          .single()
+
+        if (error) throw error
+
+        if (data) {
+          setQrCodeData(data)
+        } else {
+          setQrCodeError(t("noQRCodesFound"))
+        }
+      } catch (error) {
+        console.error("Error fetching QR codes:", error)
+        setQrCodeError(t("errorLoadingQRCodes"))
+      } finally {
+        setLoadingQRCodes(false)
+      }
+    }
+
+    fetchQRCodes()
+  }, [activeTab, isSubscriptionActive, supabase, t])
+
+  const handleDownloadQRCode = (qrCodeUrl, label) => {
+    // Create a temporary link element
+    const link = document.createElement("a")
+    link.href = qrCodeUrl
+    link.download = `${label}_qrcode.png`
+
+    // Append to the document, click it, and remove it
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handlePrintQRCode = (qrCodeUrl, label) => {
+    const printWindow = window.open("", "_blank")
+
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${label} QR Code</title>
+            <style>
+              body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                text-align: center;
+              }
+              h2 {
+                margin-bottom: 20px;
+              }
+              img {
+                max-width: 300px;
+                height: auto;
+              }
+              @media print {
+                button {
+                  display: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>${label}</h2>
+              <img src="${qrCodeUrl}" alt="${label} QR Code" />
+              <button onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background-color: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                ${t("printQRCode")}
+              </button>
+            </div>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+    }
+  }
 
   // Funksiya nomini o'zgartirdik va endi 'plan' qiymatini qabul qiladi
   const getPlanName = (planValue) => {
@@ -320,6 +429,20 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
   const employeeLimit = getEmployeeLimit(planValue)
   const features = getFeatures(planValue)
 
+  const renderSubscriptionInactiveMessage = () => (
+    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+      <div className="flex items-start">
+        <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+            {t("subscriptionInactive")}
+          </h4>
+          <p className="text-yellow-700 dark:text-yellow-400">{t("subscriptionInactiveMessage")}</p>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="card">
       <h3 className="text-xl font-semibold mb-6">{t("company")}</h3>
@@ -333,19 +456,7 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       )}
 
       {/* Obuna faol emasligi haqida xabar */}
-      {!isSubscriptionActive && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
-          <div className="flex items-start">
-            <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
-                {t("subscriptionInactive")}
-              </h4>
-              <p className="text-yellow-700 dark:text-yellow-400">{t("subscriptionInactiveMessage")}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {!isSubscriptionActive && renderSubscriptionInactiveMessage()}
 
       {/* Tab buttons */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -368,6 +479,16 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           onClick={() => setActiveTab("location")}
         >
           {t("location")}
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${
+            activeTab === "qrcodes"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+          onClick={() => setActiveTab("qrcodes")}
+        >
+          {t("qrCodes")}
         </button>
       </div>
 
@@ -536,6 +657,113 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* QR Codes Tab Content */}
+      {activeTab === "qrcodes" && (
+        <div className="space-y-6">
+          {!isSubscriptionActive ? (
+            renderSubscriptionInactiveMessage()
+          ) : loadingQRCodes ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <span className="ml-3 text-gray-600 dark:text-gray-400">{t("loadingQRCodes")}</span>
+            </div>
+          ) : qrCodeError ? (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-red-700 dark:text-red-400">{qrCodeError}</p>
+            </div>
+          ) : qrCodeData ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Kelish QR Code */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold mb-4 text-center">{t("arrivalQRCode")}</h3>
+                <div className="flex flex-col items-center">
+                  {qrCodeData.kelish_qrcode && (
+                    <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeData.kelish_qrcode)}`}
+                        alt="Kelish QR Code"
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  )}
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={() =>
+                        handleDownloadQRCode(
+                          `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCodeData.kelish_qrcode)}`,
+                          "Kelish",
+                        )
+                      }
+                      className="btn btn-primary flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      {t("downloadQRCode")}
+                    </button>
+                    <button
+                      onClick={() =>
+                        handlePrintQRCode(
+                          `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCodeData.kelish_qrcode)}`,
+                          t("arrivalQRCode"),
+                        )
+                      }
+                      className="btn btn-outline flex items-center gap-2"
+                    >
+                      <Printer className="h-4 w-4" />
+                      {t("printQRCode")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ketish QR Code */}
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold mb-4 text-center">{t("departureQRCode")}</h3>
+                <div className="flex flex-col items-center">
+                  {qrCodeData.ketish_qrcode && (
+                    <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeData.ketish_qrcode)}`}
+                        alt="Ketish QR Code"
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  )}
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={() =>
+                        handleDownloadQRCode(
+                          `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCodeData.ketish_qrcode)}`,
+                          "Ketish",
+                        )
+                      }
+                      className="btn btn-primary flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      {t("downloadQRCode")}
+                    </button>
+                    <button
+                      onClick={() =>
+                        handlePrintQRCode(
+                          `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCodeData.ketish_qrcode)}`,
+                          t("departureQRCode"),
+                        )
+                      }
+                      className="btn btn-outline flex items-center gap-2"
+                    >
+                      <Printer className="h-4 w-4" />
+                      {t("printQRCode")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <p className="text-yellow-700 dark:text-yellow-400">{t("noQRCodesFound")}</p>
+            </div>
+          )}
         </div>
       )}
 
