@@ -42,14 +42,12 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
   const clearNotifications = useCallback(() => {
     setNotifications([])
     setExpanded(false)
-    // Keep the island visible but collapsed
   }, [])
 
   // Auto-collapse after all notifications are processed
   useEffect(() => {
     if (notifications.length === 0) {
       setExpanded(false)
-      // Don't hide the island completely, just collapse it
     }
   }, [notifications])
 
@@ -94,6 +92,13 @@ export function DynamicIslandProvider({ children }: { children: ReactNode }) {
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
             className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black text-white dark:bg-gray-800 shadow-lg overflow-hidden"
             onClick={() => setExpanded(!expanded)}
+            style={{
+              position: "fixed",
+              top: "1rem",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 9999,
+            }}
           >
             <div className="relative">
               {expanded ? (

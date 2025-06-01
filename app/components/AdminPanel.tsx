@@ -10,47 +10,38 @@ import { ThemeToggle } from "./ThemeToggle"
 import { registerLocale, setDefaultLocale } from "react-datepicker"
 import uz from "date-fns/locale/uz"
 import {
-  Edit2,
-  Check,
-  X,
   Download,
   Save,
-  AlertTriangle,
   HelpCircle,
-  Trash2,
-  UserPlus,
+  TrendingUp,
   Users,
   Clock,
-  TrendingUp,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
 } from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
 import PieChart from "./PieChart"
 import { useLanguage } from "../context/LanguageContext"
 import { LanguageSwitcher } from "./LanguageSwitcher"
 import Sidebar from "./Sidebar"
-import AddEmployeeForm from "./AddEmployeeForm"
 import CompanyInfo from "./CompanyInfo"
 import { useDynamicIsland } from "./DynamicIsland"
-import AutoEmployeeForm from "./AutoEmployeeForm"
 import DashboardStats from "./DashboardStats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import EmployeeManagement from "./EmployeeManagement"
 
 registerLocale("uz", uz)
 setDefaultLocale("uz")
 
 export default function AdminPanel({ companyId }: { companyId: string }) {
   const [employees, setEmployees] = useState([])
-  const [employeeDetails, setEmployeeDetails] = useState([])
   const [reasons, setReasons] = useState({})
   const [attendanceData, setAttendanceData] = useState([])
-  const [view, setView] = useState("dashboard") // Default to dashboard view
+  const [view, setView] = useState("dashboard")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [blockedUsers, setBlockedUsers] = useState([])
-  const [editingEmployee, setEditingEmployee] = useState(null)
-  const [editName, setEditName] = useState("")
-  const [editLavozim, setEditLavozim] = useState("")
-  const [showAddEmployee, setShowAddEmployee] = useState(false)
-  const [showAutoEmployee, setShowAutoEmployee] = useState(false)
   const [companyData, setCompanyData] = useState(null)
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -63,65 +54,42 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     absentToday: 0,
     averageWorkHours: 0,
     attendanceTrend: [],
+    balance: 0,
+    subscriptionDaysLeft: 0,
   })
   const supabase = createClientComponentClient()
   const { t, language } = useLanguage()
   const { showNotification } = useDynamicIsland()
 
-  // Function to get employee limit based on plan
-  const getEmployeeLimit = (planValue) => {
-    switch (planValue) {
-      case 1: // Basic
-        return 5
-      case 2: // Premium
-        return 125
-      case 3: // Bigplan
-        return Number.POSITIVE_INFINITY // No limit
-      default:
-        return 0 // No employees allowed
+  // Calculate subscription status and employee limits based on new logic
+  const calculateSubscriptionStatus = (latestSubsDate) => {
+    if (!latestSubsDate) return { isActive: false, expiresOn: null, daysLeft: 0 }
+
+    const subsDate = new Date(latestSubsDate)
+    const expiresOn = new Date(subsDate.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    const now = new Date()
+    const daysLeft = Math.ceil((expiresOn - now) / (24 * 60 * 60 * 1000))
+
+    return {
+      isActive: daysLeft > 0,
+      expiresOn,
+      daysLeft: Math.max(0, daysLeft),
     }
   }
 
-  // Function to remove excess employees
-  const removeExcessEmployees = useCallback(async () => {
-    if (!companyData || !isSubscriptionActive) return
+  const calculateEmployeeLimits = (balance) => {
+    const freeEmployees = 3
+    const costPerEmployee = 0.8
+    const additionalEmployees = Math.floor(balance / costPerEmployee)
+    const totalLimit = freeEmployees + additionalEmployees
 
-    try {
-      const limit = getEmployeeLimit(companyData.plan)
-
-      // Get all employees sorted by creation date (newest first)
-      const { data: employees, error: fetchError } = await supabase
-        .from("users")
-        .select("id, created_at")
-        .eq("company_id", companyId)
-        .eq("is_super_admin", false)
-        .order("created_at", { ascending: false })
-
-      if (fetchError) throw fetchError
-
-      // If we have more employees than the limit
-      if (employees.length > limit) {
-        // Get the excess employees (newest ones)
-        const excessEmployees = employees.slice(limit)
-
-        // Delete each excess employee
-        for (const employee of excessEmployees) {
-          const { error: deleteError } = await supabase.from("users").delete().eq("id", employee.id)
-          if (deleteError) console.error("Error deleting excess employee:", deleteError)
-        }
-
-        showNotification("warning", t("excessEmployeesRemoved", { count: excessEmployees.length }))
-
-        // Refresh employee data
-        fetchEmployees()
-        if (view === "employees") {
-          fetchEmployeeDetails()
-        }
-      }
-    } catch (error) {
-      console.error("Error removing excess employees:", error)
+    return {
+      freeEmployees,
+      additionalEmployees,
+      totalLimit,
+      costPerEmployee,
     }
-  }, [companyData, isSubscriptionActive, companyId, supabase, showNotification, t])
+  }
 
   // Fetch company data to check subscription status
   const fetchCompanyData = useCallback(async () => {
@@ -132,18 +100,28 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
       if (error) throw error
 
       setCompanyData(data)
-      // Check if subscription is active:
-      // - If plan is 0, subscription is inactive
-      // - If subscription is 0, subscription is inactive
-      // - Otherwise, subscription is active (null values are considered active)
-      const isActive = !(data.plan === 0 || data.subscription === 0)
+
+      // Calculate subscription status
+      const subscriptionStatus = calculateSubscriptionStatus(data.latest_subs_date)
+      const employeeLimits = calculateEmployeeLimits(data.balance || 0)
+
+      // Check if subscription is active and balance is sufficient
+      const requiredBalance = Math.max(
+        0,
+        (employees.length - employeeLimits.freeEmployees) * employeeLimits.costPerEmployee,
+      )
+      const isActive = subscriptionStatus.isActive && (data.balance || 0) >= requiredBalance
+
       setIsSubscriptionActive(isActive)
-
-      // Check if premium or higher
       setIsPremium(data.plan >= 2)
+      setEmployeeLimit(employeeLimits.totalLimit)
 
-      // Set employee limit based on plan
-      setEmployeeLimit(getEmployeeLimit(data.plan))
+      // Update dashboard stats
+      setDashboardStats((prev) => ({
+        ...prev,
+        balance: data.balance || 0,
+        subscriptionDaysLeft: subscriptionStatus.daysLeft,
+      }))
     } catch (error) {
       console.error("Error fetching company data:", error)
       showNotification("error", "Kompaniya ma'lumotlarini yuklashda xatolik yuz berdi")
@@ -151,14 +129,12 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     } finally {
       setIsLoading(false)
     }
-  }, [supabase, companyId, showNotification])
+  }, [supabase, companyId, showNotification, employees.length])
 
   const fetchEmployees = useCallback(async () => {
-    if (!isSubscriptionActive) return
-
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, lavozim")
+      .select("id, name, email, lavozim, archived")
       .eq("is_super_admin", false)
       .eq("company_id", companyId)
 
@@ -168,30 +144,12 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     } else {
       setEmployees(data)
     }
-  }, [supabase, companyId, isSubscriptionActive, showNotification])
-
-  const fetchEmployeeDetails = useCallback(async () => {
-    if (!isSubscriptionActive) return
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("lavozim, name, email, id, avatar")
-      .eq("is_super_admin", false)
-      .eq("company_id", companyId)
-
-    if (error) {
-      console.error("Error fetching employee details:", error)
-      showNotification("error", "Xodimlar haqidagi ma'lumotlarni yuklashda xatolik yuz berdi")
-    } else {
-      setEmployeeDetails(data)
-    }
-  }, [supabase, companyId, isSubscriptionActive, showNotification])
+  }, [supabase, companyId, showNotification])
 
   const fetchAttendanceData = useCallback(
     async (date) => {
-      if (!isSubscriptionActive || !employees.length) return
+      if (!employees.length) return
 
-      // Sanani yyyy-mm-dd formatiga o'tkazamiz
       const formattedDate = date.toISOString().split("T")[0]
 
       const { data: attendanceRecords, error: attendanceError } = await supabase
@@ -228,7 +186,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
         const arrivalMinutes = kelishVaqti ? kelishVaqti.getHours() * 60 + kelishVaqti.getMinutes() : -1
 
-        let arrivalStatus = "green" // Default to green
+        let arrivalStatus = "green"
         if (arrivalMinutes >= 9 * 60 && arrivalMinutes < 10 * 60) {
           arrivalStatus = "yellow"
         } else if (arrivalMinutes >= 10 * 60) {
@@ -269,7 +227,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         updateDashboardStats(fullAttendanceData, employees.length)
       }
     },
-    [supabase, employees, companyId, isSubscriptionActive, showNotification],
+    [supabase, employees, companyId, showNotification],
   )
 
   // Function to update dashboard stats
@@ -278,13 +236,11 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     const lateToday = attendanceData.filter((record) => record.isLate).length
     const absentToday = totalEmployees - presentToday
 
-    // Calculate average work hours for those who have completed their day
     const completedWorkRecords = attendanceData.filter(
       (record) => record.kelish_vaqti && record.ketish_vaqti && record.totalWorkMinutes > 0,
     )
 
     const totalWorkMinutes = completedWorkRecords.reduce((sum, record) => sum + record.totalWorkMinutes, 0)
-
     const averageWorkHours =
       completedWorkRecords.length > 0 ? (totalWorkMinutes / completedWorkRecords.length / 60).toFixed(1) : 0
 
@@ -300,13 +256,10 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
   // Fetch attendance trend data for the dashboard
   const fetchAttendanceTrend = useCallback(async () => {
-    if (!isSubscriptionActive) return
-
     try {
-      // Get data for the last 7 days
       const endDate = new Date()
       const startDate = new Date()
-      startDate.setDate(startDate.getDate() - 6) // 7 days including today
+      startDate.setDate(startDate.getDate() - 6)
 
       const dateRange = []
       for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -337,7 +290,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     } catch (error) {
       console.error("Error fetching attendance trend:", error)
     }
-  }, [supabase, companyId, isSubscriptionActive])
+  }, [supabase, companyId])
 
   const fetchBlockedUsers = useCallback(async () => {
     if (!isSubscriptionActive) return
@@ -358,78 +311,37 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     }
   }, [supabase, companyId, isSubscriptionActive, showNotification])
 
-  // Open Telegram channel
-  const openTelegramChannel = () => {
-    window.open("https://t.me/modderboy", "_blank")
-  }
-
-  // Open Android app directly
-  const openAndroidApp = () => {
-    // Direct link to the app without Play Market
-    window.location.href = "davomat://open"
-  }
-
   useEffect(() => {
     fetchCompanyData()
   }, [fetchCompanyData])
 
   useEffect(() => {
-    if (isSubscriptionActive) {
-      fetchEmployees()
-    }
-  }, [fetchEmployees, isSubscriptionActive])
+    fetchEmployees()
+  }, [fetchEmployees])
 
   useEffect(() => {
-    if (isSubscriptionActive && view === "employees") {
-      fetchEmployeeDetails()
-    }
-  }, [view, fetchEmployeeDetails, isSubscriptionActive])
-
-  useEffect(() => {
-    if (isSubscriptionActive && employees.length) {
+    if (employees.length) {
       fetchAttendanceData(selectedDate)
     }
-  }, [selectedDate, employees, fetchAttendanceData, isSubscriptionActive])
+  }, [selectedDate, employees, fetchAttendanceData])
 
   useEffect(() => {
-    if (isSubscriptionActive && view === "blocked") {
+    if (view === "blocked") {
       fetchBlockedUsers()
     }
-  }, [view, fetchBlockedUsers, isSubscriptionActive])
+  }, [view, fetchBlockedUsers])
 
-  // Fetch attendance trend when dashboard is viewed
   useEffect(() => {
-    if (isSubscriptionActive && view === "dashboard") {
+    if (view === "dashboard") {
       fetchAttendanceTrend()
     }
-  }, [view, fetchAttendanceTrend, isSubscriptionActive])
+  }, [view, fetchAttendanceTrend])
 
-  // Periodically check for excess employees (every 5 minutes)
   useEffect(() => {
     if (isSubscriptionActive) {
-      // Initial check
-      removeExcessEmployees()
-
-      // Set up interval
-      const interval = setInterval(
-        () => {
-          removeExcessEmployees()
-        },
-        5 * 60 * 1000,
-      ) // 5 minutes
-
-      return () => clearInterval(interval)
-    }
-  }, [isSubscriptionActive, removeExcessEmployees])
-
-  // Show a notification when the component mounts to ensure Dynamic Island is active
-  useEffect(() => {
-    if (isSubscriptionActive) {
-      // Small delay to ensure the UI is ready
       const timer = setTimeout(() => {
         showNotification("info", t("welcomeMessage"))
       }, 1000)
-
       return () => clearTimeout(timer)
     }
   }, [isSubscriptionActive, showNotification, t])
@@ -505,125 +417,8 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     }
   }
 
-  const handleEditStart = (employee) => {
-    if (!isSubscriptionActive) return
-    setEditingEmployee(employee)
-    setEditName(employee.name)
-    setEditLavozim(employee.lavozim)
-  }
-
-  const handleEditCancel = () => {
-    setEditingEmployee(null)
-    setEditName("")
-    setEditLavozim("")
-  }
-
-  const handleEditSave = async (employeeId) => {
-    if (!isSubscriptionActive) return
-
-    try {
-      const { error } = await supabase
-        .from("users")
-        .update({
-          name: editName,
-          lavozim: editLavozim,
-        })
-        .eq("id", employeeId)
-        .eq("company_id", companyId)
-
-      if (error) throw error
-
-      showNotification("success", "Xodim ma'lumotlari muvaffaqiyatli yangilandi")
-      fetchEmployeeDetails()
-      setEditingEmployee(null)
-      setEditName("")
-      setEditLavozim("")
-    } catch (error) {
-      console.error("Error updating employee details:", error)
-      showNotification("error", "Xodim ma'lumotlarini yangilashda xatolik yuz berdi")
-    }
-  }
-
-  const handleDeleteEmployee = async (employeeId) => {
-    if (!isSubscriptionActive) return
-
-    try {
-      // First check if this employee has attendance records
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from("davomat")
-        .select("id")
-        .eq("xodim_id", employeeId)
-        .limit(1)
-
-      if (attendanceError) throw attendanceError
-
-      // If there are attendance records, ask for confirmation
-      if (attendanceData && attendanceData.length > 0) {
-        const confirmed = window.confirm(t("deleteEmployeeWithRecordsConfirmation"))
-        if (!confirmed) return
-      }
-
-      // Delete the employee
-      const { error } = await supabase.from("users").delete().eq("id", employeeId).eq("company_id", companyId)
-
-      if (error) throw error
-
-      showNotification("success", t("employeeDeletedSuccessfully"))
-      fetchEmployeeDetails()
-      fetchEmployees()
-    } catch (error) {
-      console.error("Error deleting employee:", error)
-      showNotification("error", t("errorDeletingEmployee"))
-    }
-  }
-
-  const handleEmployeeAdded = () => {
-    fetchEmployees()
-    fetchEmployeeDetails()
-    setShowAddEmployee(false)
-    setShowAutoEmployee(false)
-    showNotification("success", "Xodim muvaffaqiyatli qo'shildi")
-
-    // Check for excess employees after adding
-    removeExcessEmployees()
-  }
-
-  const handleUploadAvatar = async (employeeId, file) => {
-    if (!isSubscriptionActive || !isPremium) return
-
-    try {
-      // Upload the file to Supabase Storage
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${employeeId}.${fileExt}`
-      const filePath = `avatar/${fileName}`
-
-      const { error: uploadError } = await supabase.storage.from("users").upload(filePath, file, {
-        upsert: true,
-        contentType: file.type,
-      })
-
-      if (uploadError) throw uploadError
-
-      // Get the public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("users").getPublicUrl(filePath)
-
-      // Update the user record with the avatar URL
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ avatar: publicUrl })
-        .eq("id", employeeId)
-        .eq("company_id", companyId)
-
-      if (updateError) throw updateError
-
-      showNotification("success", t("avatarUpdatedSuccessfully"))
-      fetchEmployeeDetails()
-    } catch (error) {
-      console.error("Error uploading avatar:", error)
-      showNotification("error", t("errorUploadingAvatar"))
-    }
+  const openTelegramChannel = () => {
+    window.open("https://t.me/modderboy", "_blank")
   }
 
   // Subscription inactive message
@@ -633,9 +428,6 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
         <h3 className="text-xl font-bold mb-2">{t("subscriptionInactive")}</h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{t("subscriptionInactiveMessage")}</p>
-        <button onClick={openAndroidApp} className="btn btn-primary">
-          {t("renewSubscription")}
-        </button>
       </div>
     </div>
   )
@@ -645,10 +437,27 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
 
     return (
       <div className="space-y-6">
-        <h3 className="text-2xl font-semibold">{t("dashboard")}</h3>
+        {/* Enhanced Stats Cards with Balance */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {/* Balance Card */}
+          <Card className="col-span-1 sm:col-span-2 lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                {t("balance")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                ${dashboardStats.balance.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {dashboardStats.subscriptionDaysLeft} {t("daysLeft")}
+              </p>
+            </CardContent>
+          </Card>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Employees */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t("totalEmployees")}</CardTitle>
@@ -661,13 +470,14 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             </CardContent>
           </Card>
 
+          {/* Present Today */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t("presentToday")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                 <div className="text-2xl font-bold">{dashboardStats.presentToday}</div>
                 <div className="text-sm text-muted-foreground ml-2">
                   ({Math.round((dashboardStats.presentToday / dashboardStats.totalEmployees) * 100) || 0}%)
@@ -676,6 +486,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             </CardContent>
           </Card>
 
+          {/* Late Today */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t("lateToday")}</CardTitle>
@@ -691,6 +502,23 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             </CardContent>
           </Card>
 
+          {/* Absent Today */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("absentToday")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.absentToday}</div>
+                <div className="text-sm text-muted-foreground ml-2">
+                  ({Math.round((dashboardStats.absentToday / dashboardStats.totalEmployees) * 100) || 0}%)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Average Work Hours */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{t("averageWorkHours")}</CardTitle>
@@ -732,23 +560,23 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             <CardTitle>{t("todayAttendance")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="table-container">
-              <table className="table">
-                <thead className="table-header">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b">
                   <tr>
-                    <th className="table-header-cell">{t("name")}</th>
-                    <th className="table-header-cell">{t("position")}</th>
-                    <th className="table-header-cell">{t("arrivalTime")}</th>
-                    <th className="table-header-cell">{t("departureTime")}</th>
-                    <th className="table-header-cell">{t("totalWorkTime")}</th>
+                    <th className="text-left py-2 px-4 font-medium">{t("name")}</th>
+                    <th className="text-left py-2 px-4 font-medium">{t("position")}</th>
+                    <th className="text-left py-2 px-4 font-medium">{t("arrivalTime")}</th>
+                    <th className="text-left py-2 px-4 font-medium">{t("departureTime")}</th>
+                    <th className="text-left py-2 px-4 font-medium">{t("totalWorkTime")}</th>
                   </tr>
                 </thead>
-                <tbody className="table-body">
+                <tbody>
                   {attendanceData.slice(0, 5).map((record) => (
-                    <tr key={record.xodim_id} className="table-row">
-                      <td className="table-cell font-medium">{record.users.name}</td>
-                      <td className="table-cell">{record.users.lavozim}</td>
-                      <td className="table-cell">
+                    <tr key={record.xodim_id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="py-3 px-4 font-medium">{record.users.name}</td>
+                      <td className="py-3 px-4">{record.users.lavozim}</td>
+                      <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             record.arrivalStatus === "red"
@@ -763,7 +591,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                           {formatTime(record.kelish_vaqti)}
                         </span>
                       </td>
-                      <td className="table-cell">
+                      <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             record.isEarlyLeave && record.ketish_vaqti
@@ -776,7 +604,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                           {formatTime(record.ketish_vaqti)}
                         </span>
                       </td>
-                      <td className="table-cell">{record.totalWorkTime}</td>
+                      <td className="py-3 px-4">{record.totalWorkTime}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -792,9 +620,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
     return (
-      <div className="card">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold mb-4 md:mb-0">{t("attendance")}</h3>
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <h3 className="text-2xl font-bold">{t("attendance")}</h3>
           <div className="flex flex-col sm:flex-row gap-3">
             <DatePicker
               selected={selectedDate}
@@ -809,58 +637,75 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
             </button>
           </div>
         </div>
-        <div className="table-container">
-          <table className="table">
-            <thead className="table-header">
-              <tr>
-                <th className="table-header-cell">{t("name")}</th>
-                <th className="table-header-cell">{t("position")}</th>
-                <th className="table-header-cell">{t("arrivalTime")}</th>
-                <th className="table-header-cell">{t("departureTime")}</th>
-                <th className="table-header-cell">{t("totalWorkTime")}</th>
-                <th className="table-header-cell">{t("reason")}</th>
-              </tr>
-            </thead>
-            <tbody className="table-body">
-              {attendanceData.map((record) => (
-                <tr key={record.xodim_id} className="table-row">
-                  <td className="table-cell font-medium">{record.users.name}</td>
-                  <td className="table-cell">{record.users.lavozim}</td>
-                  <td className="table-cell">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        record.arrivalStatus === "red"
-                          ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          : record.arrivalStatus === "yellow"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                            : record.kelish_vaqti
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {formatTime(record.kelish_vaqti)}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        record.isEarlyLeave && record.ketish_vaqti
-                          ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          : record.ketish_vaqti
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {formatTime(record.ketish_vaqti)}
-                    </span>
-                  </td>
-                  <td className="table-cell">{record.totalWorkTime}</td>
-                  <td className="table-cell">{record.sabab || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("name")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("position")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("arrivalTime")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("departureTime")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("totalWorkTime")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("reason")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {attendanceData.map((record) => (
+                    <tr key={record.xodim_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap font-medium">{record.users.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{record.users.lavozim}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.arrivalStatus === "red"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                              : record.arrivalStatus === "yellow"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                : record.kelish_vaqti
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {formatTime(record.kelish_vaqti)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.isEarlyLeave && record.ketish_vaqti
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                              : record.ketish_vaqti
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {formatTime(record.ketish_vaqti)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{record.totalWorkTime}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{record.sabab || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -869,9 +714,9 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
     return (
-      <div className="card">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold mb-4 md:mb-0">{t("attendanceReasons")}</h3>
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <h3 className="text-2xl font-bold">{t("attendanceReasons")}</h3>
           <DatePicker
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
@@ -882,28 +727,27 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {employees.map((employee) => (
-            <div
-              key={employee.id}
-              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700"
-            >
-              <p className="font-medium text-gray-900 dark:text-white mb-2">{employee.name}</p>
-              <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={reasons[employee.id] || ""}
-                  onChange={(e) => handleReasonChange(employee.id, e.target.value)}
-                  className="input"
-                  placeholder={t("reason")}
-                />
-                <button
-                  onClick={() => saveReason(employee.id)}
-                  className="btn btn-primary flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  {reasons[employee.id] ? t("update") : t("save")}
-                </button>
-              </div>
-            </div>
+            <Card key={employee.id}>
+              <CardContent className="p-4">
+                <p className="font-medium text-gray-900 dark:text-white mb-2">{employee.name}</p>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={reasons[employee.id] || ""}
+                    onChange={(e) => handleReasonChange(employee.id, e.target.value)}
+                    className="input"
+                    placeholder={t("reason")}
+                  />
+                  <button
+                    onClick={() => saveReason(employee.id)}
+                    className="btn btn-primary flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    {reasons[employee.id] ? t("update") : t("save")}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -914,17 +758,25 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
     return (
-      <div className="card">
-        <h3 className="text-xl font-semibold mb-6">{t("charts")}</h3>
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold">{t("charts")}</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <h4 className="text-lg font-semibold mb-4">{t("barChart")}</h4>
-            <EmployeeChart attendanceData={attendanceData} />
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <h4 className="text-lg font-semibold mb-4">{t("pieChart")}</h4>
-            <PieChart attendanceData={attendanceData} />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("barChart")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmployeeChart attendanceData={attendanceData} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("pieChart")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PieChart attendanceData={attendanceData} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -934,180 +786,16 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
     return (
-      <div className="card">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold mb-4 md:mb-0">{t("employees")}</h3>
-          <div className="flex flex-col sm:flex-row gap-3">
-            {!showAddEmployee && !showAutoEmployee && (
-              <>
-                <button
-                  onClick={() => {
-                    setShowAddEmployee(true)
-                    setShowAutoEmployee(false)
-                  }}
-                  className="btn btn-primary flex items-center gap-2"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  {t("addEmployee")}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAutoEmployee(true)
-                    setShowAddEmployee(false)
-                  }}
-                  className="btn btn-secondary flex items-center gap-2"
-                >
-                  <Users className="w-4 h-4" />
-                  {t("autoAddEmployees")}
-                </button>
-              </>
-            )}
-            {(showAddEmployee || showAutoEmployee) && (
-              <button
-                onClick={() => {
-                  setShowAddEmployee(false)
-                  setShowAutoEmployee(false)
-                }}
-                className="btn btn-outline"
-              >
-                {t("cancel")}
-              </button>
-            )}
-
-            {/* Employee limit indicator */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md">
-              <span className="text-sm">
-                {employeeDetails.length} / {employeeLimit === Number.POSITIVE_INFINITY ? "∞" : employeeLimit}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {showAddEmployee ? (
-          <AddEmployeeForm onEmployeeAdded={handleEmployeeAdded} companyId={companyId} />
-        ) : showAutoEmployee ? (
-          <AutoEmployeeForm
-            onEmployeeAdded={handleEmployeeAdded}
-            companyId={companyId}
-            companyName={companyData?.company_name || ""}
-            currentEmployeeCount={employeeDetails.length}
-            employeeLimit={employeeLimit}
-          />
-        ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead className="table-header">
-                <tr>
-                  <th className="table-header-cell">{t("position")}</th>
-                  <th className="table-header-cell">{t("name")}</th>
-                  <th className="table-header-cell">{t("email")}</th>
-                  {isPremium && <th className="table-header-cell">{t("avatar")}</th>}
-                  <th className="table-header-cell">{t("actions")}</th>
-                </tr>
-              </thead>
-              <tbody className="table-body">
-                {employeeDetails.map((employee) => (
-                  <tr key={employee.email} className="table-row">
-                    <td className="table-cell">
-                      {editingEmployee?.email === employee.email ? (
-                        <input
-                          type="text"
-                          value={editLavozim}
-                          onChange={(e) => setEditLavozim(e.target.value)}
-                          className="input"
-                          placeholder={t("position")}
-                        />
-                      ) : (
-                        employee.lavozim
-                      )}
-                    </td>
-                    <td className="table-cell">
-                      {editingEmployee?.email === employee.email ? (
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="input"
-                          placeholder={t("name")}
-                        />
-                      ) : (
-                        employee.name
-                      )}
-                    </td>
-                    <td className="table-cell">{employee.email}</td>
-                    {isPremium && (
-                      <td className="table-cell">
-                        <div className="flex items-center gap-2">
-                          {employee.avatar && (
-                            <div className="w-10 h-10 rounded-full overflow-hidden">
-                              <img
-                                src={employee.avatar || "/placeholder.svg"}
-                                alt={employee.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                          <label className="btn btn-sm btn-outline cursor-pointer">
-                            {employee.avatar ? t("change") : t("upload")}
-                            <input
-                              type="file"
-                              className="hidden"
-                              accept="image/*"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadAvatar(employee.id, e.target.files[0])
-                                }
-                              }}
-                            />
-                          </label>
-                        </div>
-                      </td>
-                    )}
-                    <td className="table-cell">
-                      {editingEmployee?.email === employee.email ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditSave(employee.id)}
-                            className="btn btn-success p-2"
-                            title={t("save")}
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button onClick={handleEditCancel} className="btn btn-danger p-2" title={t("cancel")}>
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditStart(employee)}
-                            className="btn btn-primary p-2"
-                            title={t("edit")}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEmployee(employee.id)}
-                            className="btn btn-danger p-2"
-                            title={t("delete")}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <EmployeeManagement
+        companyId={companyId}
+        employeeLimit={employeeLimit}
+        currentEmployeeCount={employees.filter((emp) => !emp.archived).length}
+        isPremium={isPremium}
+      />
     )
   }
 
   const renderCompanyView = () => {
-    // Always show company view, but with different content based on subscription status
     return <CompanyInfo companyId={companyId} isSubscriptionActive={isSubscriptionActive} />
   }
 
@@ -1115,47 +803,59 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
 
     return (
-      <div className="card">
-        <h3 className="text-xl font-semibold mb-6">{t("blocked")}</h3>
-        <div className="table-container">
-          <table className="table">
-            <thead className="table-header">
-              <tr>
-                <th className="table-header-cell">{t("name")}</th>
-                <th className="table-header-cell">{t("email")}</th>
-                <th className="table-header-cell">{t("blockedAt")}</th>
-                <th className="table-header-cell">{t("actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="table-body">
-              {blockedUsers.length > 0 ? (
-                blockedUsers.map((blockedUser) => (
-                  <tr key={blockedUser.id} className="table-row">
-                    <td className="table-cell">{blockedUser.users.name}</td>
-                    <td className="table-cell">{blockedUser.users.email}</td>
-                    <td className="table-cell">
-                      {new Date(blockedUser.blocked_at).toLocaleString(
-                        language === "en" ? "en-US" : language === "ru" ? "ru-RU" : "uz-UZ",
-                        { timeZone: "Asia/Tashkent" },
-                      )}
-                    </td>
-                    <td className="table-cell">
-                      <button onClick={() => unblockUser(blockedUser.user_id)} className="btn btn-primary">
-                        {t("unblock")}
-                      </button>
-                    </td>
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold">{t("blocked")}</h3>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("name")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("email")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("blockedAt")}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      {t("actions")}
+                    </th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="table-cell text-center py-8 text-gray-500 dark:text-gray-400">
-                    No blocked users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {blockedUsers.length > 0 ? (
+                    blockedUsers.map((blockedUser) => (
+                      <tr key={blockedUser.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap">{blockedUser.users.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{blockedUser.users.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {new Date(blockedUser.blocked_at).toLocaleString(
+                            language === "en" ? "en-US" : language === "ru" ? "ru-RU" : "uz-UZ",
+                            { timeZone: "Asia/Tashkent" },
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button onClick={() => unblockUser(blockedUser.user_id)} className="btn btn-primary">
+                            {t("unblock")}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No blocked users found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -1172,24 +872,27 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar activeView={view} setView={setView} isSubscriptionActive={isSubscriptionActive} />
 
-      <div className="md:ml-64 transition-all duration-300 ease-in-out">
-        <header className="navbar px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{t("adminPanel")}</h1>
-          <div className="flex items-center space-x-2">
-            {/* Help button */}
-            <button
-              onClick={openTelegramChannel}
-              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-              title={t("help")}
-            >
-              <HelpCircle className="h-5 w-5" />
-            </button>
-            <LanguageSwitcher />
-            <ThemeToggle />
+      <div className="lg:ml-80 transition-all duration-300 ease-in-out">
+        <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl lg:text-2xl font-bold text-indigo-600 dark:text-indigo-400 ml-12 lg:ml-0">
+              {t("adminPanel")}
+            </h1>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={openTelegramChannel}
+                className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                title={t("help")}
+              >
+                <HelpCircle className="h-5 w-5" />
+              </button>
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
-        <main className="p-4 md:p-6">
+        <main className="p-4 lg:p-6">
           {view === "dashboard" && renderDashboardView()}
           {view === "attendance" && renderAttendanceView()}
           {view === "absence" && renderAbsenceView()}

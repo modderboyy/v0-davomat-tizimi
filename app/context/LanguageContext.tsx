@@ -1059,6 +1059,147 @@ const translations: Translations = {
     en: "No company ID provided",
     ru: "ID компании не предоставлен",
   },
+  // New translations for enhanced features
+  attendanceManagement: {
+    uz: "Davomat boshqaruvi",
+    en: "Attendance Management",
+    ru: "Управление посещаемостью",
+  },
+  employeeManagement: {
+    uz: "Xodimlar boshqaruvi",
+    en: "Employee Management",
+    ru: "Управление сотрудниками",
+  },
+  companySettings: {
+    uz: "Kompaniya sozlamalari",
+    en: "Company Settings",
+    ru: "Настройки компании",
+  },
+  analytics: {
+    uz: "Tahlillar",
+    en: "Analytics",
+    ru: "Аналитика",
+  },
+  archivedEmployees: {
+    uz: "Arxivlangan xodimlar",
+    en: "Archived Employees",
+    ru: "Архивированные сотрудники",
+  },
+  searchEmployees: {
+    uz: "Xodimlarni qidirish",
+    en: "Search employees",
+    ru: "Поиск сотрудников",
+  },
+  allEmployees: {
+    uz: "Barcha xodimlar",
+    en: "All Employees",
+    ru: "Все сотрудники",
+  },
+  activeEmployees: {
+    uz: "Faol xodimlar",
+    en: "Active Employees",
+    ru: "Активные сотрудники",
+  },
+  employeesSelected: {
+    uz: "xodim tanlandi",
+    en: "employees selected",
+    ru: "сотрудников выбрано",
+  },
+  archive: {
+    uz: "Arxivlash",
+    en: "Archive",
+    ru: "Архивировать",
+  },
+  unarchive: {
+    uz: "Arxivdan chiqarish",
+    en: "Unarchive",
+    ru: "Разархивировать",
+  },
+  archived: {
+    uz: "Arxivlangan",
+    en: "Archived",
+    ru: "Архивирован",
+  },
+  active: {
+    uz: "Faol",
+    en: "Active",
+    ru: "Активный",
+  },
+  dateAdded: {
+    uz: "Qo'shilgan sana",
+    en: "Date Added",
+    ru: "Дата добавления",
+  },
+  used: {
+    uz: "ishlatilgan",
+    en: "used",
+    ru: "использовано",
+  },
+  confirmBulkDelete: {
+    uz: "{count} ta xodimni o'chirishni tasdiqlaysizmi?",
+    en: "Are you sure you want to delete {count} employees?",
+    ru: "Вы уверены, что хотите удалить {count} сотрудников?",
+  },
+  employeesArchivedSuccessfully: {
+    uz: "{count} ta xodim muvaffaqiyatli arxivlandi",
+    en: "{count} employees archived successfully",
+    ru: "{count} сотрудников успешно архивировано",
+  },
+  employeesUnarchivedSuccessfully: {
+    uz: "{count} ta xodim muvaffaqiyatli arxivdan chiqarildi",
+    en: "{count} employees unarchived successfully",
+    ru: "{count} сотрудников успешно разархивировано",
+  },
+  employeesDeletedSuccessfully: {
+    uz: "{count} ta xodim muvaffaqiyatli o'chirildi",
+    en: "{count} employees deleted successfully",
+    ru: "{count} сотрудников успешно удалено",
+  },
+  errorArchivingEmployees: {
+    uz: "Xodimlarni arxivlashda xatolik",
+    en: "Error archiving employees",
+    ru: "Ошибка архивирования сотрудников",
+  },
+  errorUnarchivingEmployees: {
+    uz: "Xodimlarni arxivdan chiqarishda xatolik",
+    en: "Error unarchiving employees",
+    ru: "Ошибка разархивирования сотрудников",
+  },
+  errorDeletingEmployees: {
+    uz: "Xodimlarni o'chirishda xatolik",
+    en: "Error deleting employees",
+    ru: "Ошибка удаления сотрудников",
+  },
+  errorFetchingEmployees: {
+    uz: "Xodimlarni yuklashda xatolik",
+    en: "Error fetching employees",
+    ru: "Ошибка загрузки сотрудников",
+  },
+  errorUpdatingEmployee: {
+    uz: "Xodim ma'lumotlarini yangilashda xatolik",
+    en: "Error updating employee",
+    ru: "Ошибка обновления сотрудника",
+  },
+  employeeArchived: {
+    uz: "Xodim arxivlandi",
+    en: "Employee archived",
+    ru: "Сотрудник архивирован",
+  },
+  employeeUnarchived: {
+    uz: "Xodim arxivdan chiqarildi",
+    en: "Employee unarchived",
+    ru: "Сотрудник разархивирован",
+  },
+  noEmployeesFound: {
+    uz: "Xodimlar topilmadi",
+    en: "No employees found",
+    ru: "Сотрудники не найдены",
+  },
+  noEmployeesYet: {
+    uz: "Hali xodimlar yo'q",
+    en: "No employees yet",
+    ru: "Пока нет сотрудников",
+  },
 }
 
 type LanguageContextType = {
