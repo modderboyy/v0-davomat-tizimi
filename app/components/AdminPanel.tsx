@@ -9,7 +9,18 @@ import EmployeeChart from "./EmployeeChart"
 import { ThemeToggle } from "./ThemeToggle"
 import { registerLocale, setDefaultLocale } from "react-datepicker"
 import uz from "date-fns/locale/uz"
-import { Download, Save, HelpCircle, Users, Clock, DollarSign, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import {
+  Download,
+  Save,
+  HelpCircle,
+  TrendingUp,
+  Users,
+  Clock,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react"
 import "react-toastify/dist/ReactToastify.css"
 import PieChart from "./PieChart"
 import { useLanguage } from "../context/LanguageContext"
@@ -20,18 +31,6 @@ import { useDynamicIsland } from "./DynamicIsland"
 import DashboardStats from "./DashboardStats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import EmployeeManagement from "./EmployeeManagement"
-import AttendanceEditor from "./AttendanceEditor"
-import EmployeeDetailView from "./EmployeeDetailView"
-import CompanySettings from "./CompanySettings"
-import MoodTracking from "./MoodTracking"
-import TeamSpaces from "./TeamSpaces"
-import AchievementSystem from "./AchievementSystem"
-import WellnessTracking from "./WellnessTracking"
-import SkillsManagement from "./SkillsManagement"
-import ShiftScheduling from "./ShiftScheduling"
-import ExpenseManagement from "./ExpenseManagement"
-import RecognitionSystem from "./RecognitionSystem"
-import AIInsights from "./AIInsights"
 
 registerLocale("uz", uz)
 setDefaultLocale("uz")
@@ -48,12 +47,12 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [employeeLimit, setEmployeeLimit] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null)
   const [dashboardStats, setDashboardStats] = useState({
     totalEmployees: 0,
     presentToday: 0,
     lateToday: 0,
     absentToday: 0,
+    averageWorkHours: 0,
     attendanceTrend: [],
     balance: 0,
     subscriptionDaysLeft: 0,
@@ -237,12 +236,21 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     const lateToday = attendanceData.filter((record) => record.isLate).length
     const absentToday = totalEmployees - presentToday
 
+    const completedWorkRecords = attendanceData.filter(
+      (record) => record.kelish_vaqti && record.ketish_vaqti && record.totalWorkMinutes > 0,
+    )
+
+    const totalWorkMinutes = completedWorkRecords.reduce((sum, record) => sum + record.totalWorkMinutes, 0)
+    const averageWorkHours =
+      completedWorkRecords.length > 0 ? (totalWorkMinutes / completedWorkRecords.length / 60).toFixed(1) : 0
+
     setDashboardStats((prev) => ({
       ...prev,
       totalEmployees,
       presentToday,
       lateToday,
       absentToday,
+      averageWorkHours,
     }))
   }
 
@@ -430,7 +438,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     return (
       <div className="space-y-6">
         {/* Enhanced Stats Cards with Balance */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {/* Balance Card */}
           <Card className="col-span-1 sm:col-span-2 lg:col-span-2">
             <CardHeader className="pb-2">
@@ -506,6 +514,20 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
                 <div className="text-sm text-muted-foreground ml-2">
                   ({Math.round((dashboardStats.absentToday / dashboardStats.totalEmployees) * 100) || 0}%)
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Average Work Hours */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("averageWorkHours")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <TrendingUp className="h-5 w-5 text-blue-500 mr-2" />
+                <div className="text-2xl font-bold">{dashboardStats.averageWorkHours}</div>
+                <div className="text-sm text-muted-foreground ml-2">{t("hours")}</div>
               </div>
             </CardContent>
           </Card>
@@ -769,7 +791,6 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         employeeLimit={employeeLimit}
         currentEmployeeCount={employees.filter((emp) => !emp.archived).length}
         isPremium={isPremium}
-        onEmployeeClick={setSelectedEmployeeId}
       />
     )
   }
@@ -874,41 +895,13 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
         <main className="p-4 lg:p-6">
           {view === "dashboard" && renderDashboardView()}
           {view === "attendance" && renderAttendanceView()}
-          {view === "attendance-edit" && <AttendanceEditor companyId={companyId} />}
           {view === "absence" && renderAbsenceView()}
           {view === "chart" && renderChartView()}
           {view === "employees" && renderEmployeesView()}
-          {view === "archived" && (
-            <EmployeeManagement
-              companyId={companyId}
-              employeeLimit={employeeLimit}
-              currentEmployeeCount={employees.filter((emp) => !emp.archived).length}
-              isPremium={isPremium}
-              showArchived={true}
-              onEmployeeClick={setSelectedEmployeeId}
-            />
-          )}
           {view === "company" && renderCompanyView()}
-          {view === "balance" && <CompanySettings companyId={companyId} activeSection="balance" />}
-          {view === "location" && <CompanySettings companyId={companyId} activeSection="location" />}
-          {view === "qrcodes" && <CompanySettings companyId={companyId} activeSection="qrcodes" />}
           {view === "blocked" && renderBlockedView()}
-          {view === "mood-tracking" && <MoodTracking companyId={companyId} />}
-          {view === "team-spaces" && <TeamSpaces companyId={companyId} />}
-          {view === "achievements" && <AchievementSystem companyId={companyId} />}
-          {view === "wellness" && <WellnessTracking companyId={companyId} />}
-          {view === "skills" && <SkillsManagement companyId={companyId} />}
-          {view === "scheduling" && <ShiftScheduling companyId={companyId} />}
-          {view === "expenses" && <ExpenseManagement companyId={companyId} />}
-          {view === "recognition" && <RecognitionSystem companyId={companyId} />}
-          {view === "ai-insights" && <AIInsights companyId={companyId} />}
         </main>
       </div>
-
-      {/* Employee Detail Modal */}
-      {selectedEmployeeId && (
-        <EmployeeDetailView employeeId={selectedEmployeeId} onClose={() => setSelectedEmployeeId(null)} />
-      )}
     </div>
   )
 }
