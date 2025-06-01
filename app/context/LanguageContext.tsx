@@ -929,6 +929,136 @@ const translations: Translations = {
     en: "Print QR Code",
     ru: "Распечатать QR-код",
   },
+  balance: {
+    uz: "Balans",
+    en: "Balance",
+    ru: "Баланс",
+  },
+  transactions: {
+    uz: "Tranzaksiyalar",
+    en: "Transactions",
+    ru: "Транзакции",
+  },
+  topUpBalance: {
+    uz: "Balansni to'ldirish",
+    en: "Top Up Balance",
+    ru: "Пополнить баланс",
+  },
+  amount: {
+    uz: "Miqdor",
+    en: "Amount",
+    ru: "Сумма",
+  },
+  description: {
+    uz: "Tavsif",
+    en: "Description",
+    ru: "Описание",
+  },
+  paymentMethod: {
+    uz: "To'lov usuli",
+    en: "Payment Method",
+    ru: "Способ оплаты",
+  },
+  status: {
+    uz: "Holat",
+    en: "Status",
+    ru: "Статус",
+  },
+  date: {
+    uz: "Sana",
+    en: "Date",
+    ru: "Дата",
+  },
+  completed: {
+    uz: "Bajarildi",
+    en: "Completed",
+    ru: "Завершено",
+  },
+  pending: {
+    uz: "Kutilmoqda",
+    en: "Pending",
+    ru: "Ожидание",
+  },
+  failed: {
+    uz: "Muvaffaqiyatsiz",
+    en: "Failed",
+    ru: "Неудачно",
+  },
+  noTransactions: {
+    uz: "Tranzaksiyalar topilmadi",
+    en: "No transactions found",
+    ru: "Транзакции не найдены",
+  },
+  loadingTransactions: {
+    uz: "Tranzaksiyalar yuklanmoqda...",
+    en: "Loading transactions...",
+    ru: "Загрузка транзакций...",
+  },
+  errorLoadingTransactions: {
+    uz: "Tranzaksiyalarni yuklashda xatolik",
+    en: "Error loading transactions",
+    ru: "Ошибка загрузки транзакций",
+  },
+  subscriptionExpiresOn: {
+    uz: "Obuna tugash sanasi",
+    en: "Subscription expires on",
+    ru: "Подписка истекает",
+  },
+  subscriptionExpired: {
+    uz: "Obuna muddati tugagan",
+    en: "Subscription expired",
+    ru: "Подписка истекла",
+  },
+  freeEmployees: {
+    uz: "Bepul xodimlar",
+    en: "Free employees",
+    ru: "Бесплатные сотрудники",
+  },
+  additionalEmployees: {
+    uz: "Qo'shimcha xodimlar",
+    en: "Additional employees",
+    ru: "Дополнительные сотрудники",
+  },
+  perEmployee: {
+    uz: "har bir xodim uchun",
+    en: "per employee",
+    ru: "за сотрудника",
+  },
+  insufficientBalance: {
+    uz: "Balans yetarli emas",
+    en: "Insufficient balance",
+    ru: "Недостаточно средств",
+  },
+  employeesDisabled: {
+    uz: "Xodimlar vaqtinchalik o'chirilgan",
+    en: "Employees temporarily disabled",
+    ru: "Сотрудники временно отключены",
+  },
+  balanceInfo: {
+    uz: "Balans ma'lumotlari",
+    en: "Balance Information",
+    ru: "Информация о балансе",
+  },
+  currentBalance: {
+    uz: "Joriy balans",
+    en: "Current Balance",
+    ru: "Текущий баланс",
+  },
+  daysLeft: {
+    uz: "kun qoldi",
+    en: "days left",
+    ru: "дней осталось",
+  },
+  companyNotFound: {
+    uz: "Kompaniya topilmadi",
+    en: "Company not found",
+    ru: "Компания не найдена",
+  },
+  noCompanyIdProvided: {
+    uz: "Kompaniya ID berilmagan",
+    en: "No company ID provided",
+    ru: "ID компании не предоставлен",
+  },
 }
 
 type LanguageContextType = {

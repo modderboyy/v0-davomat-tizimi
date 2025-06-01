@@ -5,7 +5,6 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useLanguage } from "../context/LanguageContext"
 import {
   AlertTriangle,
-  Check,
   ExternalLink,
   X,
   CalendarDays,
@@ -14,6 +13,10 @@ import {
   Info,
   Edit2,
   Printer,
+  DollarSign,
+  CreditCard,
+  Users,
+  Clock,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -21,77 +24,120 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
   const [companyData, setCompanyData] = useState(null)
   const [employeeCount, setEmployeeCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("") // Fetch va popup ichidagi xatolar uchun umumiy state
-  const [showUpgradePopup, setShowUpgradePopup] = useState(false) // Popup ko'rsatish state'i
-  const [showLocationPopup, setShowLocationPopup] = useState(false) // Joylashuv popup state'i
-  const [showLocationGuide, setShowLocationGuide] = useState(false) // Joylashuv qo'llanmasi popup state'i
-  const [latestAppLink, setLatestAppLink] = useState(null) // Eng so'nggi app linki uchun state
-  const [locationData, setLocationData] = useState(null) // Joylashuv ma'lumotlari
+  const [error, setError] = useState("")
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
+  const [showLocationPopup, setShowLocationPopup] = useState(false)
+  const [showLocationGuide, setShowLocationGuide] = useState(false)
+  const [latestAppLink, setLatestAppLink] = useState(null)
+  const [locationData, setLocationData] = useState(null)
   const [latitude, setLatitude] = useState("")
   const [longitude, setLongitude] = useState("")
   const [distance, setDistance] = useState("")
   const [isNewCompany, setIsNewCompany] = useState(false)
-  const [activeTab, setActiveTab] = useState("info") // "info" yoki "location"
+  const [activeTab, setActiveTab] = useState("info")
   const [qrCodeData, setQrCodeData] = useState(null)
   const [loadingQRCodes, setLoadingQRCodes] = useState(false)
   const [qrCodeError, setQrCodeError] = useState("")
+  const [transactions, setTransactions] = useState([])
+  const [loadingTransactions, setLoadingTransactions] = useState(false)
+  const [transactionError, setTransactionError] = useState("")
 
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
   const router = useRouter()
 
+  // Calculate subscription status and employee limits
+  const calculateSubscriptionStatus = (latestSubsDate) => {
+    if (!latestSubsDate) return { isActive: false, expiresOn: null, daysLeft: 0 }
+
+    const subsDate = new Date(latestSubsDate)
+    const expiresOn = new Date(subsDate.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    const now = new Date()
+    const daysLeft = Math.ceil((expiresOn - now) / (24 * 60 * 60 * 1000))
+
+    return {
+      isActive: daysLeft > 0,
+      expiresOn,
+      daysLeft: Math.max(0, daysLeft),
+    }
+  }
+
+  const calculateEmployeeLimits = (balance) => {
+    const freeEmployees = 3
+    const costPerEmployee = 0.8
+    const additionalEmployees = Math.floor(balance / costPerEmployee)
+    const totalLimit = freeEmployees + additionalEmployees
+
+    return {
+      freeEmployees,
+      additionalEmployees,
+      totalLimit,
+      costPerEmployee,
+    }
+  }
+
+  const generatePaymentToken = () => {
+    // Generate a simple token (in production, use a more secure method)
+    return btoa(`${companyId}_${Date.now()}_${Math.random()}`)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .substring(0, 32)
+  }
+
+  const handleTopUpBalance = () => {
+    const token = generatePaymentToken()
+    const paymentUrl = `https://davomatpay.vercel.app/paycompany?company_id=${companyId}&token=${token}`
+    window.open(paymentUrl, "_blank")
+  }
+
   useEffect(() => {
     const fetchCompanyDataAndLink = async () => {
       setLoading(true)
-      setError("") // Fetch boshlanishida xatoni tozalash
+      setError("")
 
       try {
-        // 1. Kompaniya ma'lumotlarini olish (plan va subscription ustunlari ham olinadi)
+        // 1. Fetch company data
         const { data: company, error: companyError } = await supabase
           .from("companies")
-          .select("*") // Barcha ustunlarni oladi
+          .select("*")
           .eq("id", companyId)
           .single()
 
         if (companyError) {
           console.error("Supabase error fetching company:", companyError)
-          throw companyError // Xato qaytarsa, keyingi qadamlarni to'xtatish
+          throw companyError
         }
-        if (!company) throw new Error(t("companyNotFound")) // Qo'shimcha tekshiruv, translationga o'tkazildi
+        if (!company) throw new Error(t("companyNotFound"))
 
-        // 2. Xodimlar sonini olish
+        // 2. Fetch employee count
         const { count, error: countError } = await supabase
           .from("users")
           .select("*", { count: "exact", head: true })
           .eq("company_id", companyId)
-          .eq("is_super_admin", false) // Faqat xodimlarni hisoblash
+          .eq("is_super_admin", false)
 
         if (countError) {
           console.error("Supabase error fetching employee count:", countError)
-          throw countError // Xato qaytarsa, keyingi qadamlarni to'xtatish
+          throw countError
         }
 
-        // 3. Eng so'nggi dastur yuklab olish linkini olish
-        // maybeSingle() ishlatamiz, chunki 'updates' jadvali bo'sh bo'lishi mumkin
+        // 3. Fetch latest app link
         const { data: updateData, error: updateError } = await supabase
           .from("updates")
           .select("update_link")
-          .order("number", { ascending: false }) // 'number' ustuni bo'yicha kamayish tartibida
-          .limit(1) // Eng birinchi (eng katta number) qatorni olish
-          .maybeSingle() // Faqat bitta natija kutiladi, topilmasa null qaytaradi
+          .order("number", { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
-        // updateError.code === "PGRST116" - bu "no rows found" degani, bu holda xato emas
         if (updateError && updateError.code !== "PGRST116") {
           console.error("Error fetching latest update link:", updateError)
-          // Linkni null qoldiramiz, lekin asosiy ma'lumotlar yuklandi, shuning uchun umumiy xato stateiga yozmaymiz
           setLatestAppLink(null)
         } else if (updateData && updateData.update_link) {
-          setLatestAppLink(updateData.update_link) // Link topilsa saqlash
+          setLatestAppLink(updateData.update_link)
         } else {
-          setLatestAppLink(null) // Link topilmasa null qilish
+          setLatestAppLink(null)
         }
 
-        // 4. Joylashuv ma'lumotlarini olish
+        // 4. Fetch location data
         const { data: locationData, error: locationError } = await supabase
           .from("location")
           .select("*")
@@ -107,22 +153,19 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           setDistance(locationData.distance ? locationData.distance.toString() : "")
         }
 
-        // Hamma ma'lumotlar muvaffaqiyatli olindi
         setCompanyData(company)
         setEmployeeCount(count || 0)
         setIsNewCompany(company.new || false)
 
-        // Agar yangi kompaniya bo'lsa va setup sahifasida bo'lmasa, setup sahifasiga yo'naltirish
         if (company.new === true && window.location.pathname !== "/setup") {
           router.push("/setup")
         }
       } catch (error) {
         console.error("Overall Error during fetch:", error)
-        // Xatolik ro'y bersa, barcha datani null/0 qilish va xato xabarini saqlash
         setError(error.message || t("errorFetchingData"))
         setCompanyData(null)
         setEmployeeCount(0)
-        setLatestAppLink(null) // Fetch xatosida linkni ham null qilish
+        setLatestAppLink(null)
         setLocationData(null)
       } finally {
         setLoading(false)
@@ -132,8 +175,8 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     if (companyId) {
       fetchCompanyDataAndLink()
     } else {
-      setLoading(false) // Agar companyId yo'q bo'lsa, loadingni to'xtatish
-      setError(t("noCompanyIdProvided")) // companyId yo'q bo'lsa xato berish
+      setLoading(false)
+      setError(t("noCompanyIdProvided"))
       setCompanyData(null)
       setEmployeeCount(0)
       setLatestAppLink(null)
@@ -174,13 +217,40 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     fetchQRCodes()
   }, [activeTab, isSubscriptionActive, supabase, t])
 
+  // Fetch transactions when balance tab is selected
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (activeTab !== "balance") return
+
+      setLoadingTransactions(true)
+      setTransactionError("")
+
+      try {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("company_id", companyId)
+          .order("created_at", { ascending: false })
+          .limit(10)
+
+        if (error) throw error
+
+        setTransactions(data || [])
+      } catch (error) {
+        console.error("Error fetching transactions:", error)
+        setTransactionError(t("errorLoadingTransactions"))
+      } finally {
+        setLoadingTransactions(false)
+      }
+    }
+
+    fetchTransactions()
+  }, [activeTab, companyId, supabase, t])
+
   const handleDownloadQRCode = (qrCodeUrl, label) => {
-    // Create a temporary link element
     const link = document.createElement("a")
     link.href = qrCodeUrl
     link.download = `${label}_qrcode.png`
-
-    // Append to the document, click it, and remove it
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -236,72 +306,22 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     }
   }
 
-  // Funksiya nomini o'zgartirdik va endi 'plan' qiymatini qabul qiladi
-  const getPlanName = (planValue) => {
-    switch (planValue) {
-      case 1:
-        return t("basic")
-      case 2:
-        return t("premium")
-      case 3:
-        return t("bigplan") // plans/bigplan
-      default:
-        return t("basic") // Default to basic instead of free
-    }
-  }
-
-  // Bu funksiya endi 'plan' qiymatiga bog'liq
-  const getEmployeeLimit = (planValue) => {
-    switch (planValue) {
-      case 1:
-        return 5
-      case 2:
-        return 125
-      case 3:
-        return "∞" // Infinity
-      default:
-        return 5 // Default to basic limit
-    }
-  }
-
-  // Bu funksiya endi 'plan' qiymatiga bog'liq
-  const getFeatures = (planValue) => {
-    const features = [
-      { name: t("gpsTracking"), available: [1, 2, 3] },
-      { name: t("basicReports"), available: [1, 2, 3] },
-      { name: t("excelExports"), available: [1, 2, 3] },
-      { name: t("advancedAntiSpoofing"), available: [2, 3] },
-      { name: t("customPlan"), available: [3] },
-      { name: t("avatarUpload"), available: [2, 3] }, // Added avatar upload feature for premium plans
-    ]
-
-    return features.map((feature) => ({
-      ...feature,
-      isAvailable: feature.available.includes(planValue),
-    }))
-  }
-
-  // Popupni ochish funksiyasi
   const showRenewalPopup = () => {
     setShowUpgradePopup(true)
-    setError("") // Clear any previous errors
+    setError("")
   }
 
-  // Popupni yopish funksiyasi
   const handleClosePopup = () => {
     setShowUpgradePopup(false)
-    setError("") // Popup yopilganda xatoni tozalash
+    setError("")
   }
 
-  // Joylashuv popupni ochish
   const handleOpenLocationPopup = () => {
     setShowLocationPopup(true)
   }
 
-  // Joylashuv popupni yopish
   const handleCloseLocationPopup = () => {
     setShowLocationPopup(false)
-    // Agar o'zgarishlar saqlanmagan bo'lsa, eski qiymatlarni qaytarish
     if (locationData) {
       setLatitude(locationData.latitude || "")
       setLongitude(locationData.longitude || "")
@@ -309,32 +329,26 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     }
   }
 
-  // Joylashuv qo'llanmasi popupni ochish
   const handleOpenLocationGuide = () => {
     setShowLocationGuide(true)
   }
 
-  // Joylashuv qo'llanmasi popupni yopish
   const handleCloseLocationGuide = () => {
     setShowLocationGuide(false)
   }
 
-  // Yuklab olish tugmasi bosilganda
   const handleDownloadClick = () => {
     if (latestAppLink) {
       console.log("Opening download link:", latestAppLink)
-      window.open(latestAppLink, "_blank") // Linkni yangi tabda ochish
+      window.open(latestAppLink, "_blank")
     } else {
-      // Agar link topilmagan bo'lsa, xato ko'rsatish (popup ichida)
       setError(t("downloadLinkNotAvailableMessage"))
       console.error("Download link is not available.")
     }
   }
 
-  // Joylashuv ma'lumotlarini saqlash
   const handleSaveLocation = async () => {
     try {
-      // Latitude va longitude raqam ekanligini tekshirish
       const latNum = Number.parseFloat(latitude)
       const lonNum = Number.parseFloat(longitude)
       const distNum = Number.parseInt(distance, 10)
@@ -358,10 +372,8 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
 
       let result
       if (locationData?.id) {
-        // Mavjud joylashuvni yangilash
         result = await supabase.from("location").update(locationObject).eq("id", locationData.id)
       } else {
-        // Yangi joylashuv yaratish
         result = await supabase.from("location").insert(locationObject)
       }
 
@@ -369,7 +381,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
         throw result.error
       }
 
-      // Ma'lumotlarni yangilash
       const { data: newLocationData, error: fetchError } = await supabase
         .from("location")
         .select("*")
@@ -398,8 +409,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     )
   }
 
-  // Agar loading tugadi, error mavjud va companyData yo'q bo'lsa (ma'lumot yuklash umuman muvaffaqiyatsiz bo'ldi)
-  // Bu holatda faqat xato xabarini ko'rsatamiz.
   if (error && !companyData) {
     return (
       <div className="card p-8">
@@ -408,10 +417,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     )
   }
 
-  // Agar loading tugadi, error yo'q, lekin companyData ham yo'q (bu companyId mavjud emasligini tekshirgandagi holat bo'lishi mumkin)
-  // Yuqoridagi shart error bo'lganda ishlaydi. Bu shart esa error *yo'q* bo'lganda companyData mavjud emasligini tekshiradi.
-  // companyId null bo'lganda setError set qilinadi, shuning uchun bu blokga tushish kamdan-kam holat.
-  // Lekin ehtiyot chorasi sifatida qoldirildi.
   if (!companyData) {
     return (
       <div className="card p-8">
@@ -420,14 +425,14 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     )
   }
 
-  // 'plan' ustunidan qiymat olamiz, agar yo'q bo'lsa yoki null bo'lsa 1 (Basic) deb olamiz
-  const planValue = companyData.plan === null || companyData.plan === undefined ? 1 : companyData.plan
-  // 'subscription' ustuni endi davomiylikni (oy) bildiradi
-  const subscriptionDuration = companyData.subscription // Bu null yoki undefined bo'lishi mumkin
+  // Calculate subscription and employee limits based on new logic
+  const subscriptionStatus = calculateSubscriptionStatus(companyData.latest_subs_date)
+  const employeeLimits = calculateEmployeeLimits(companyData.balance || 0)
+  const balance = companyData.balance || 0
 
-  const planName = getPlanName(planValue)
-  const employeeLimit = getEmployeeLimit(planValue)
-  const features = getFeatures(planValue)
+  // Check if employees should be disabled due to insufficient balance
+  const requiredBalance = Math.max(0, (employeeCount - employeeLimits.freeEmployees) * employeeLimits.costPerEmployee)
+  const employeesDisabled = !subscriptionStatus.isActive || balance < requiredBalance
 
   const renderSubscriptionInactiveMessage = () => (
     <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
@@ -435,9 +440,11 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
         <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
         <div>
           <h4 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
-            {t("subscriptionInactive")}
+            {subscriptionStatus.isActive ? t("insufficientBalance") : t("subscriptionExpired")}
           </h4>
-          <p className="text-yellow-700 dark:text-yellow-400">{t("subscriptionInactiveMessage")}</p>
+          <p className="text-yellow-700 dark:text-yellow-400">
+            {subscriptionStatus.isActive ? t("employeesDisabled") : t("subscriptionInactiveMessage")}
+          </p>
         </div>
       </div>
     </div>
@@ -447,16 +454,13 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
     <div className="card">
       <h3 className="text-xl font-semibold mb-6">{t("company")}</h3>
 
-      {/* General Error message (asosan initial fetch xatosi uchun) */}
-      {/* Agar popup ochiq bo'lsa, errorni asosiy sahifada ko'rsatmaymiz, chunki u popup ichida ko'rinadi */}
       {error && !showUpgradePopup && !showLocationPopup && (
         <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
           {error}
         </div>
       )}
 
-      {/* Obuna faol emasligi haqida xabar */}
-      {!isSubscriptionActive && renderSubscriptionInactiveMessage()}
+      {employeesDisabled && renderSubscriptionInactiveMessage()}
 
       {/* Tab buttons */}
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -469,6 +473,16 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           onClick={() => setActiveTab("info")}
         >
           {t("companyInfo")}
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${
+            activeTab === "balance"
+              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          }`}
+          onClick={() => setActiveTab("balance")}
+        >
+          {t("balance")}
         </button>
         <button
           className={`py-2 px-4 font-medium text-sm ${
@@ -495,7 +509,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       {/* Info Tab Content */}
       {activeTab === "info" && (
         <div className="grid gap-8 md:grid-cols-2">
-          {/* Chap ustun */}
           <div className="space-y-6">
             <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("companyName")}</h4>
@@ -503,34 +516,17 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
             </div>
 
             <div>
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("planLevel")}</h4>
-              <div className="flex items-center">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
-                    planValue === 1
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                      : planValue === 2
-                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-                        : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" // planValue === 3
-                  }`}
-                >
-                  {planName}
-                </span>
-              </div>
-            </div>
-
-            <div>
               <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center">
-                <CalendarDays className="h-4 w-4 mr-1.5" /> {t("subscriptionDuration")}
+                <CalendarDays className="h-4 w-4 mr-1.5" /> {t("subscriptionExpiresOn")}
               </h4>
               <p className="text-lg font-semibold">
-                {subscriptionDuration !== null && subscriptionDuration !== undefined && subscriptionDuration > 0
-                  ? `${subscriptionDuration} ${t("months")}`
-                  : t("notSet")}
+                {subscriptionStatus.expiresOn ? subscriptionStatus.expiresOn.toLocaleDateString() : t("notSet")}
               </p>
-              {(subscriptionDuration === null || subscriptionDuration === undefined || subscriptionDuration <= 0) && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{t("durationNotSetWarning")}</p>
-              )}
+              <p className={`text-sm ${subscriptionStatus.isActive ? "text-green-600" : "text-red-600"}`}>
+                {subscriptionStatus.isActive
+                  ? `${subscriptionStatus.daysLeft} ${t("daysLeft")}`
+                  : t("subscriptionExpired")}
+              </p>
             </div>
 
             <div>
@@ -538,19 +534,19 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               <div className="flex flex-col">
                 <div className="flex items-center mb-1">
                   <span className="text-lg font-semibold">
-                    {employeeCount} / {employeeLimit === "∞" ? "∞" : employeeLimit}
+                    {employeeCount} / {employeeLimits.totalLimit}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{t("usedEmployees")}</span>
                 </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  {employeeLimits.freeEmployees} {t("freeEmployees")} + {employeeLimits.additionalEmployees}{" "}
+                  {t("additionalEmployees")} (${employeeLimits.costPerEmployee} {t("perEmployee")})
+                </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                   <div
-                    className={`h-2.5 rounded-full ${
-                      planValue === 1 ? "bg-blue-600" : planValue === 2 ? "bg-purple-600" : "bg-green-600" // planValue === 3
-                    }`}
+                    className="h-2.5 rounded-full bg-indigo-600"
                     style={{
-                      width: `${
-                        employeeLimit === "∞" ? 100 : Math.min(100, (employeeCount / Number(employeeLimit || 1)) * 100)
-                      }%`,
+                      width: `${Math.min(100, (employeeCount / employeeLimits.totalLimit) * 100)}%`,
                     }}
                   ></div>
                 </div>
@@ -558,27 +554,141 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
             </div>
           </div>
 
-          {/* O'ng ustun (Funksiyalar) */}
           <div>
-            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t("features")}</h4>
-            <ul className="space-y-2">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  {feature.isAvailable ? (
-                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                  ) : (
-                    <X className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
-                  )}
-                  <span
-                    className={`text-sm ${
-                      feature.isAvailable ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    {feature.name}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t("balanceInfo")}</h4>
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-4 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl font-bold text-green-600 dark:text-green-400">${balance.toFixed(2)}</span>
+                <DollarSign className="h-6 w-6 text-green-500" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t("currentBalance")}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Balance Tab Content */}
+      {activeTab === "balance" && (
+        <div className="space-y-6">
+          {/* Balance Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">{t("balance")}</p>
+                  <p className="text-3xl font-bold text-green-700 dark:text-green-300">${balance.toFixed(2)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-500" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t("employeeLimit")}</p>
+                  <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{employeeLimits.totalLimit}</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    {employeeLimits.freeEmployees} + {employeeLimits.additionalEmployees}
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-blue-500" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                    {t("subscriptionExpiresOn")}
+                  </p>
+                  <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                    {subscriptionStatus.daysLeft} {t("daysLeft")}
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-purple-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Top Up Button */}
+          <div className="flex justify-center">
+            <button onClick={handleTopUpBalance} className="btn btn-primary flex items-center gap-2 px-8 py-3 text-lg">
+              <CreditCard className="h-5 w-5" />
+              {t("topUpBalance")}
+            </button>
+          </div>
+
+          {/* Transactions */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h4 className="text-lg font-semibold">{t("transactions")}</h4>
+            </div>
+
+            {loadingTransactions ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">{t("loadingTransactions")}</span>
+              </div>
+            ) : transactionError ? (
+              <div className="p-6">
+                <p className="text-red-600 dark:text-red-400">{transactionError}</p>
+              </div>
+            ) : transactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {t("date")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {t("description")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {t("amount")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {t("status")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {transactions.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {new Date(transaction.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                          {transaction.description || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <span className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
+                            {transaction.type === "credit" ? "+" : "-"}${Math.abs(transaction.amount).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              transaction.status === "completed"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : transaction.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                            }`}
+                          >
+                            {t(transaction.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <p className="text-gray-500 dark:text-gray-400">{t("noTransactions")}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -659,10 +769,11 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           </div>
         </div>
       )}
+
       {/* QR Codes Tab Content */}
       {activeTab === "qrcodes" && (
         <div className="space-y-6">
-          {!isSubscriptionActive ? (
+          {employeesDisabled ? (
             renderSubscriptionInactiveMessage()
           ) : loadingQRCodes ? (
             <div className="flex justify-center items-center py-12">
@@ -769,11 +880,9 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
 
       {/* Tugmalar */}
       <div className="mt-8 border-t pt-6 flex flex-col sm:flex-row gap-4">
-        {/* Tugma endi popupni ochadi */}
-        {/* isSubscriptionActive false bo'lsa 'renew' matni, aks holda 'upgrade' matni */}
         <button onClick={showRenewalPopup} className="btn btn-primary flex items-center justify-center gap-2">
-          {isSubscriptionActive ? t("upgradeSubscription") : t("renewSubscription")}
-          <ExternalLink className="h-4 w-4" /> {/* Bu icon pop upga olib borishni bildiradi */}
+          {t("renewSubscription")}
+          <ExternalLink className="h-4 w-4" />
         </button>
         <a
           href="https://t.me/modderboy"
@@ -786,11 +895,9 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
       </div>
 
       {/* === Upgrade/Renew Popup === */}
-      {/* Popup ko'rsatish showUpgradePopup state'iga bog'liq */}
       {showUpgradePopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative animate-fade-in-up">
-            {/* Close button */}
             <button
               onClick={handleClosePopup}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -799,22 +906,18 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               <X className="h-5 w-5" />
             </button>
 
-            {/* Popup Content */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t("renewSubscriptionTitle")}
             </h3>
 
             <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">{t("renewSubscriptionMessage")}</p>
 
-            {/* Error message within popup (specifically for download link issue) */}
             {error && (
               <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400 text-sm">
                 {error}
               </div>
             )}
 
-            {/* Download Button */}
-            {/* Link mavjud bo'lgandagina tugmani ko'rsatish */}
             {latestAppLink ? (
               <button
                 onClick={handleDownloadClick}
@@ -824,21 +927,18 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
                 {t("downloadAppButton")}
               </button>
             ) : (
-              // Agar link topilmagan bo'lsa, boshqa xabar ko'rsatish
               <p className="text-sm text-yellow-700 dark:text-yellow-400 text-center">
-                {t("downloadLinkNotAvailableMessage")} {/* Yangi translation key */}
+                {t("downloadLinkNotAvailableMessage")}
               </p>
             )}
           </div>
         </div>
       )}
-      {/* === End Upgrade/Renew Popup === */}
 
       {/* === Location Popup === */}
       {showLocationPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative animate-fade-in-up">
-            {/* Close button */}
             <button
               onClick={handleCloseLocationPopup}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -847,12 +947,10 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               <X className="h-5 w-5" />
             </button>
 
-            {/* Popup Content */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {locationData ? t("editLocation") : t("setLocation")}
             </h3>
 
-            {/* Error message */}
             {error && (
               <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-md dark:bg-red-900/30 dark:border-red-800 dark:text-red-400 text-sm">
                 {error}
@@ -916,13 +1014,11 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           </div>
         </div>
       )}
-      {/* === End Location Popup === */}
 
       {/* === Location Guide Popup === */}
       {showLocationGuide && (
         <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative animate-fade-in-up">
-            {/* Close button */}
             <button
               onClick={handleCloseLocationGuide}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -931,7 +1027,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               <X className="h-5 w-5" />
             </button>
 
-            {/* Popup Content */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t("locationGuide")}</h3>
 
             <div className="space-y-4">
@@ -963,7 +1058,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
           </div>
         </div>
       )}
-      {/* === End Location Guide Popup === */}
     </div>
   )
 }
