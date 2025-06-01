@@ -1200,6 +1200,436 @@ const translations: Translations = {
     en: "No employees yet",
     ru: "Пока нет сотрудников",
   },
+  attendanceEditor: {
+    uz: "Davomat tahrirchisi",
+    en: "Attendance Editor",
+    ru: "Редактор посещаемости",
+  },
+  manualAttendanceAdjustments: {
+    uz: "Qo'lda davomat o'zgartirishlari",
+    en: "Manual attendance adjustments",
+    ru: "Ручные корректировки посещаемости",
+  },
+  checkinTime: {
+    uz: "Kelish vaqti",
+    en: "Check-in Time",
+    ru: "Время прихода",
+  },
+  checkoutTime: {
+    uz: "Ketish vaqti",
+    en: "Check-out Time",
+    ru: "Время ухода",
+  },
+  editTimes: {
+    uz: "Vaqtlarni tahrirlash",
+    en: "Edit Times",
+    ru: "Редактировать время",
+  },
+  markAbsent: {
+    uz: "Yo'q deb belgilash",
+    en: "Mark Absent",
+    ru: "Отметить отсутствующим",
+  },
+  absent: {
+    uz: "Yo'q",
+    en: "Absent",
+    ru: "Отсутствует",
+  },
+  sick: {
+    uz: "Kasal",
+    en: "Sick",
+    ru: "Больной",
+  },
+  vacation: {
+    uz: "Ta'til",
+    en: "Vacation",
+    ru: "Отпуск",
+  },
+  weekend: {
+    uz: "Dam olish kuni",
+    en: "Weekend",
+    ru: "Выходной",
+  },
+  holiday: {
+    uz: "Bayram",
+    en: "Holiday",
+    ru: "Праздник",
+  },
+  addHoliday: {
+    uz: "Bayram qo'shish",
+    en: "Add Holiday",
+    ru: "Добавить праздник",
+  },
+  holidayName: {
+    uz: "Bayram nomi",
+    en: "Holiday Name",
+    ru: "Название праздника",
+  },
+  enterHolidayName: {
+    uz: "Bayram nomini kiriting",
+    en: "Enter holiday name",
+    ru: "Введите название праздника",
+  },
+  recurringAnnually: {
+    uz: "Har yili takrorlanadi",
+    en: "Recurring annually",
+    ru: "Повторяется ежегодно",
+  },
+  companyHolidays: {
+    uz: "Kompaniya bayramlari",
+    en: "Company Holidays",
+    ru: "Праздники компании",
+  },
+  recurring: {
+    uz: "Takrorlanuvchi",
+    en: "Recurring",
+    ru: "Повторяющийся",
+  },
+  removeHoliday: {
+    uz: "Bayramni o'chirish",
+    en: "Remove Holiday",
+    ru: "Удалить праздник",
+  },
+  editAttendanceTimes: {
+    uz: "Davomat vaqtlarini tahrirlash",
+    en: "Edit Attendance Times",
+    ru: "Редактировать время посещаемости",
+  },
+  personalInformation: {
+    uz: "Shaxsiy ma'lumotlar",
+    en: "Personal Information",
+    ru: "Личная информация",
+  },
+  workInformation: {
+    uz: "Ish ma'lumotlari",
+    en: "Work Information",
+    ru: "Рабочая информация",
+  },
+  hireDate: {
+    uz: "Ishga qabul qilingan sana",
+    en: "Hire Date",
+    ru: "Дата приема на работу",
+  },
+  department: {
+    uz: "Bo'lim",
+    en: "Department",
+    ru: "Отдел",
+  },
+  salary: {
+    uz: "Maosh",
+    en: "Salary",
+    ru: "Зарплата",
+  },
+  performanceRating: {
+    uz: "Ish samaradorligi reytingi",
+    en: "Performance Rating",
+    ru: "Рейтинг производительности",
+  },
+  selectRating: {
+    uz: "Reytingni tanlang",
+    en: "Select Rating",
+    ru: "Выберите рейтинг",
+  },
+  stars: {
+    uz: "yulduz",
+    en: "stars",
+    ru: "звезд",
+  },
+  notRated: {
+    uz: "Baholanmagan",
+    en: "Not Rated",
+    ru: "Не оценен",
+  },
+  emergencyContact: {
+    uz: "Favqulodda vaziyat aloqasi",
+    en: "Emergency Contact",
+    ru: "Экстренный контакт",
+  },
+  contactName: {
+    uz: "Aloqa nomi",
+    en: "Contact Name",
+    ru: "Имя контакта",
+  },
+  contactPhone: {
+    uz: "Aloqa telefoni",
+    en: "Contact Phone",
+    ru: "Телефон контакта",
+  },
+  notes: {
+    uz: "Eslatmalar",
+    en: "Notes",
+    ru: "Заметки",
+  },
+  additionalNotes: {
+    uz: "Qo'shimcha eslatmalar",
+    en: "Additional Notes",
+    ru: "Дополнительные заметки",
+  },
+  noNotesAdded: {
+    uz: "Hech qanday eslatma qo'shilmagan",
+    en: "No notes added",
+    ru: "Заметки не добавлены",
+  },
+  saveChanges: {
+    uz: "O'zgarishlarni saqlash",
+    en: "Save Changes",
+    ru: "Сохранить изменения",
+  },
+  employeeGoals: {
+    uz: "Xodim maqsadlari",
+    en: "Employee Goals",
+    ru: "Цели сотрудника",
+  },
+  addGoal: {
+    uz: "Maqsad qo'shish",
+    en: "Add Goal",
+    ru: "Добавить цель",
+  },
+  progress: {
+    uz: "Jarayon",
+    en: "Progress",
+    ru: "Прогресс",
+  },
+  targetDate: {
+    uz: "Maqsadli sana",
+    en: "Target Date",
+    ru: "Целевая дата",
+  },
+  addNewGoal: {
+    uz: "Yangi maqsad qo'shish",
+    en: "Add New Goal",
+    ru: "Добавить новую цель",
+  },
+  goalTitle: {
+    uz: "Maqsad sarlavhasi",
+    en: "Goal Title",
+    ru: "Название цели",
+  },
+  enterGoalTitle: {
+    uz: "Maqsad sarlavhasini kiriting",
+    en: "Enter goal title",
+    ru: "Введите название цели",
+  },
+  goalDescription: {
+    uz: "Maqsad tavsifi",
+    en: "Goal Description",
+    ru: "Описание цели",
+  },
+  skillsAndCertifications: {
+    uz: "Ko'nikmalar va sertifikatlar",
+    en: "Skills and Certifications",
+    ru: "Навыки и сертификаты",
+  },
+  lastAssessed: {
+    uz: "Oxirgi baholangan",
+    en: "Last Assessed",
+    ru: "Последняя оценка",
+  },
+  wellnessTracking: {
+    uz: "Sog'liqni kuzatish",
+    en: "Wellness Tracking",
+    ru: "Отслеживание здоровья",
+  },
+  stressLevel: {
+    uz: "Stress darajasi",
+    en: "Stress Level",
+    ru: "Уровень стресса",
+  },
+  energyLevel: {
+    uz: "Energiya darajasi",
+    en: "Energy Level",
+    ru: "Уровень энергии",
+  },
+  sleepHours: {
+    uz: "Uyqu soatlari",
+    en: "Sleep Hours",
+    ru: "Часы сна",
+  },
+  achievements: {
+    uz: "Yutuqlar",
+    en: "Achievements",
+    ru: "Достижения",
+  },
+  earnedOn: {
+    uz: "Qozonilgan",
+    en: "Earned On",
+    ru: "Получено",
+  },
+  companySettings: {
+    uz: "Kompaniya sozlamalari",
+    en: "Company Settings",
+    ru: "Настройки компании",
+  },
+  manageCompanyConfiguration: {
+    uz: "Kompaniya konfiguratsiyasini boshqarish",
+    en: "Manage company configuration",
+    ru: "Управление конфигурацией компании",
+  },
+  generalSettings: {
+    uz: "Umumiy sozlamalar",
+    en: "General Settings",
+    ru: "Общие настройки",
+  },
+  recognitionSettings: {
+    uz: "E'tirof sozlamalari",
+    en: "Recognition Settings",
+    ru: "Настройки признания",
+  },
+  shiftManagement: {
+    uz: "Smena boshqaruvi",
+    en: "Shift Management",
+    ru: "Управление сменами",
+  },
+  expenseSettings: {
+    uz: "Xarajat sozlamalari",
+    en: "Expense Settings",
+    ru: "Настройки расходов",
+  },
+  announcements: {
+    uz: "E'lonlar",
+    en: "Announcements",
+    ru: "Объявления",
+  },
+  timezone: {
+    uz: "Vaqt zonasi",
+    en: "Timezone",
+    ru: "Часовой пояс",
+  },
+  recognitionTypes: {
+    uz: "E'tirof turlari",
+    en: "Recognition Types",
+    ru: "Типы признания",
+  },
+  addRecognitionType: {
+    uz: "E'tirof turini qo'shish",
+    en: "Add Recognition Type",
+    ru: "Добавить тип признания",
+  },
+  recognitionName: {
+    uz: "E'tirof nomi",
+    en: "Recognition Name",
+    ru: "Название признания",
+  },
+  points: {
+    uz: "Ochkolar",
+    en: "Points",
+    ru: "Очки",
+  },
+  shiftTemplates: {
+    uz: "Smena shablonlari",
+    en: "Shift Templates",
+    ru: "Шаблоны смен",
+  },
+  addShiftTemplate: {
+    uz: "Smena shabloni qo'shish",
+    en: "Add Shift Template",
+    ru: "Добавить шаблон смены",
+  },
+  shiftName: {
+    uz: "Smena nomi",
+    en: "Shift Name",
+    ru: "Название смены",
+  },
+  expenseCategories: {
+    uz: "Xarajat toifalari",
+    en: "Expense Categories",
+    ru: "Категории расходов",
+  },
+  addExpenseCategory: {
+    uz: "Xarajat toifasini qo'shish",
+    en: "Add Expense Category",
+    ru: "Добавить категорию расходов",
+  },
+  categoryName: {
+    uz: "Toifa nomi",
+    en: "Category Name",
+    ru: "Название категории",
+  },
+  maxAmount: {
+    uz: "Maksimal miqdor",
+    en: "Max Amount",
+    ru: "Максимальная сумма",
+  },
+  requiresReceipt: {
+    uz: "Kvitansiya talab qilinadi",
+    en: "Requires Receipt",
+    ru: "Требуется чек",
+  },
+  receiptRequired: {
+    uz: "Kvitansiya talab qilinadi",
+    en: "Receipt Required",
+    ru: "Чек обязателен",
+  },
+  receiptOptional: {
+    uz: "Kvitansiya ixtiyoriy",
+    en: "Receipt Optional",
+    ru: "Чек не обязателен",
+  },
+  companyAnnouncements: {
+    uz: "Kompaniya e'lonlari",
+    en: "Company Announcements",
+    ru: "Объявления компании",
+  },
+  addAnnouncement: {
+    uz: "E'lon qo'shish",
+    en: "Add Announcement",
+    ru: "Добавить объявление",
+  },
+  announcementTitle: {
+    uz: "E'lon sarlavhasi",
+    en: "Announcement Title",
+    ru: "Заголовок объявления",
+  },
+  announcementContent: {
+    uz: "E'lon mazmuni",
+    en: "Announcement Content",
+    ru: "Содержание объявления",
+  },
+  lowPriority: {
+    uz: "Past muhimlik",
+    en: "Low Priority",
+    ru: "Низкий приоритет",
+  },
+  normalPriority: {
+    uz: "Oddiy muhimlik",
+    en: "Normal Priority",
+    ru: "Обычный приоритет",
+  },
+  highPriority: {
+    uz: "Yuqori muhimlik",
+    en: "High Priority",
+    ru: "Высокий приоритет",
+  },
+  urgentPriority: {
+    uz: "Shoshilinch",
+    en: "Urgent Priority",
+    ru: "Срочный приоритет",
+  },
+  moodTracking: {
+    uz: "Kayfiyat kuzatuvi",
+    en: "Mood Tracking",
+    ru: "Отслеживание настроения",
+  },
+  wellnessMetrics: {
+    uz: "Sog'liqni ko'rsatkichlari",
+    en: "Wellness Metrics",
+    ru: "Показатели здоровья",
+  },
+  recognition: {
+    uz: "E'tirof",
+    en: "Recognition",
+    ru: "Признание",
+  },
+  teamSpaces: {
+    uz: "Jamoa maydonchalari",
+    en: "Team Spaces",
+    ru: "Командные пространства",
+  },
+  chat: {
+    uz: "Chat",
+    en: "Chat",
+    ru: "Чат",
+  },
 }
 
 type LanguageContextType = {

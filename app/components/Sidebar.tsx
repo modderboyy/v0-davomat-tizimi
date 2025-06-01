@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Clock,
   Lock,
   LogOut,
   Menu,
@@ -20,6 +21,22 @@ import {
   QrCode,
   Archive,
   X,
+  Edit2,
+  Heart,
+  Activity,
+  Award,
+  Trophy,
+  MessageSquare,
+  MessageCircle,
+  Megaphone,
+  BookOpen,
+  Brain,
+  GraduationCap,
+  Target,
+  Settings,
+  Receipt,
+  Timer,
+  Zap,
 } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
@@ -33,6 +50,10 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
     employees: false,
     company: false,
     analytics: false,
+    wellness: false,
+    collaboration: false,
+    development: false,
+    operations: false,
   })
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
@@ -93,6 +114,7 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
       expandable: true,
       items: [
         { id: "attendance", icon: <ClipboardList />, label: t("attendance") },
+        { id: "attendance-edit", icon: <Edit2 />, label: t("attendanceEditor") },
         { id: "absence", icon: <Calendar />, label: t("attendanceReasons") },
         { id: "blocked", icon: <Lock />, label: t("blocked") },
       ],
@@ -108,11 +130,59 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
       ],
     },
     {
+      id: "wellness",
+      label: t("wellnessAndEngagement"),
+      icon: <Heart />,
+      expandable: true,
+      items: [
+        { id: "mood-tracking", icon: <Heart />, label: t("moodTracking") },
+        { id: "wellness", icon: <Activity />, label: t("wellnessMetrics") },
+        { id: "recognition", icon: <Award />, label: t("recognition") },
+        { id: "achievements", icon: <Trophy />, label: t("achievements") },
+      ],
+    },
+    {
+      id: "collaboration",
+      label: t("teamCollaboration"),
+      icon: <MessageSquare />,
+      expandable: true,
+      items: [
+        { id: "team-spaces", icon: <Users />, label: t("teamSpaces") },
+        { id: "chat", icon: <MessageCircle />, label: t("chat") },
+        { id: "announcements", icon: <Megaphone />, label: t("announcements") },
+      ],
+    },
+    {
+      id: "development",
+      label: t("learningAndDevelopment"),
+      icon: <BookOpen />,
+      expandable: true,
+      items: [
+        { id: "skills", icon: <Brain />, label: t("skillsAssessment") },
+        { id: "training", icon: <GraduationCap />, label: t("training") },
+        { id: "goals", icon: <Target />, label: t("goals") },
+      ],
+    },
+    {
+      id: "operations",
+      label: t("operations"),
+      icon: <Settings />,
+      expandable: true,
+      items: [
+        { id: "scheduling", icon: <Clock />, label: t("scheduling") },
+        { id: "expenses", icon: <Receipt />, label: t("expenses") },
+        { id: "time-tracking", icon: <Timer />, label: t("timeTracking") },
+      ],
+    },
+    {
       id: "analytics",
       label: t("analytics"),
       icon: <BarChart2 />,
       expandable: true,
-      items: [{ id: "chart", icon: <BarChart2 />, label: t("charts") }],
+      items: [
+        { id: "chart", icon: <BarChart2 />, label: t("charts") },
+        { id: "ai-insights", icon: <Zap />, label: t("aiInsights") },
+      ],
     },
     {
       id: "company",
