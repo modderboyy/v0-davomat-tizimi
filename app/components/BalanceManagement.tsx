@@ -8,7 +8,7 @@ import {
   DollarSign,
   ArrowUpRight,
   ArrowDownLeft,
-  CreditCard,
+  Wallet,
   Clock,
   CheckCircle,
   XCircle,
@@ -17,7 +17,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import {
-  createCompanySubscriptionPlan,
+  createCompanyWallet,
   getCompanyBalance,
   createCompanyDepositPayment,
   processWithdrawal,
@@ -26,7 +26,7 @@ import {
 
 export default function BalanceManagement({ companyId }: { companyId: string }) {
   const [balance, setBalance] = useState(0)
-  const [accountId, setAccountId] = useState<string | null>(null)
+  const [walletId, setWalletId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState([])
   const [depositAmount, setDepositAmount] = useState("")
@@ -51,7 +51,7 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
       const balanceResult = await getCompanyBalance(companyId)
       if (balanceResult.success) {
         setBalance(balanceResult.balance)
-        setAccountId(balanceResult.accountId)
+        setWalletId(balanceResult.walletId)
       } else {
         setError(balanceResult.error)
       }
@@ -73,8 +73,8 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
     fetchBalanceData()
   }, [companyId])
 
-  // Create subscription plan if not exists
-  const handleCreateAccount = async () => {
+  // Create wallet if not exists
+  const handleCreateWallet = async () => {
     try {
       setLoading(true)
 
@@ -87,18 +87,18 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
 
       if (companyError) throw companyError
 
-      const result = await createCompanySubscriptionPlan(companyId, company.company_name)
+      const result = await createCompanyWallet(companyId, company.company_name)
 
       if (result.success) {
-        showNotification("success", t("subscriptionPlanCreated"))
-        setAccountId(result.planId)
+        showNotification("success", t("walletCreated"))
+        setWalletId(result.walletId)
         fetchBalanceData()
       } else {
         showNotification("error", result.error)
       }
     } catch (error) {
-      console.error("Error creating subscription plan:", error)
-      showNotification("error", t("errorCreatingSubscriptionPlan"))
+      console.error("Error creating wallet:", error)
+      showNotification("error", t("errorCreatingWallet"))
     } finally {
       setLoading(false)
     }
@@ -220,12 +220,12 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
               </h3>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">${balance.toFixed(2)}</p>
 
-              {accountId && (
+              {walletId && (
                 <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span className="mr-2">{t("accountId")}:</span>
-                  <span className="font-mono">{accountId}</span>
+                  <span className="mr-2">{t("walletId")}:</span>
+                  <span className="font-mono">{walletId}</span>
                   <button
-                    onClick={() => copyToClipboard(accountId)}
+                    onClick={() => copyToClipboard(walletId)}
                     className="ml-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                   >
                     <Copy className="h-4 w-4" />
@@ -235,14 +235,14 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              {!accountId ? (
+              {!walletId ? (
                 <button
-                  onClick={handleCreateAccount}
+                  onClick={handleCreateWallet}
                   className="btn btn-primary flex items-center justify-center gap-2"
                   disabled={loading}
                 >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                  {t("createSubscriptionPlan")}
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wallet className="h-5 w-5" />}
+                  {t("createWallet")}
                 </button>
               ) : (
                 <>
