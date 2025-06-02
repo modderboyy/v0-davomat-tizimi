@@ -63,6 +63,11 @@ export async function createCompanyCustodyAccount(companyId: string, companyName
   }
 }
 
+// Create company wallet (alias for custody account)
+export async function createCompanyWallet(companyId: string, companyName: string) {
+  return await createCompanyCustodyAccount(companyId, companyName)
+}
+
 // Get company balance from NOWPayments
 export async function getCompanyBalance(companyId: string) {
   const supabase = createServerComponentClient({ cookies })
