@@ -108,6 +108,13 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
       ],
     },
     {
+      id: "finance",
+      label: t("financeManagement"),
+      icon: <DollarSign />,
+      expandable: true,
+      items: [{ id: "balance", icon: <DollarSign />, label: t("balance") }],
+    },
+    {
       id: "analytics",
       label: t("analytics"),
       icon: <BarChart2 />,
@@ -121,7 +128,6 @@ export default function Sidebar({ activeView, setView, isSubscriptionActive = tr
       expandable: true,
       items: [
         { id: "company", icon: <Building />, label: t("companyInfo") },
-        { id: "balance", icon: <DollarSign />, label: t("balance") },
         { id: "location", icon: <MapPin />, label: t("location") },
         { id: "qrcodes", icon: <QrCode />, label: t("qrCodes") },
       ],

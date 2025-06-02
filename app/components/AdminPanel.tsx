@@ -31,6 +31,8 @@ import { useDynamicIsland } from "./DynamicIsland"
 import DashboardStats from "./DashboardStats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import EmployeeManagement from "./EmployeeManagement"
+// First, import the BalanceManagement component
+import BalanceManagement from "./BalanceManagement"
 
 registerLocale("uz", uz)
 setDefaultLocale("uz")
@@ -860,6 +862,14 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
     )
   }
 
+  // Add this function before the return statement:
+
+  const renderBalanceView = () => {
+    if (!isSubscriptionActive) return renderSubscriptionInactiveMessage()
+
+    return <BalanceManagement companyId={companyId} />
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -900,6 +910,7 @@ export default function AdminPanel({ companyId }: { companyId: string }) {
           {view === "employees" && renderEmployeesView()}
           {view === "company" && renderCompanyView()}
           {view === "blocked" && renderBlockedView()}
+          {view === "balance" && renderBalanceView()}
         </main>
       </div>
     </div>

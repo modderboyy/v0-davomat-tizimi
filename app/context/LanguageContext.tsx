@@ -1200,6 +1200,276 @@ const translations: Translations = {
     en: "No employees yet",
     ru: "Пока нет сотрудников",
   },
+  balanceManagement: {
+    uz: "Balans boshqaruvi",
+    en: "Balance Management",
+    ru: "Управление балансом",
+  },
+  createPaymentAccount: {
+    uz: "To'lov hisobini yaratish",
+    en: "Create Payment Account",
+    ru: "Создать платежный аккаунт",
+  },
+  paymentAccountCreated: {
+    uz: "To'lov hisobi muvaffaqiyatli yaratildi",
+    en: "Payment account created successfully",
+    ru: "Платежный аккаунт успешно создан",
+  },
+  errorCreatingPaymentAccount: {
+    uz: "To'lov hisobini yaratishda xatolik yuz berdi",
+    en: "Error creating payment account",
+    ru: "Ошибка при создании платежного аккаунта",
+  },
+  deposit: {
+    uz: "Hisobni to'ldirish",
+    en: "Deposit",
+    ru: "Пополнить",
+  },
+  withdraw: {
+    uz: "Pul yechish",
+    en: "Withdraw",
+    ru: "Вывести",
+  },
+  transactionHistory: {
+    uz: "Tranzaksiyalar tarixi",
+    en: "Transaction History",
+    ru: "История транзакций",
+  },
+  type: {
+    uz: "Turi",
+    en: "Type",
+    ru: "Тип",
+  },
+  paymentId: {
+    uz: "To'lov ID",
+    en: "Payment ID",
+    ru: "ID платежа",
+  },
+  noTransactionsFound: {
+    uz: "Tranzaksiyalar topilmadi",
+    en: "No transactions found",
+    ru: "Транзакции не найдены",
+  },
+  accountId: {
+    uz: "Hisob raqami",
+    en: "Account ID",
+    ru: "ID аккаунта",
+  },
+  copiedToClipboard: {
+    uz: "Nusxa olindi",
+    en: "Copied to clipboard",
+    ru: "Скопировано в буфер обмена",
+  },
+  createDepositLink: {
+    uz: "To'ldirish havolasini yaratish",
+    en: "Create Deposit Link",
+    ru: "Создать ссылку для пополнения",
+  },
+  depositLinkCreated: {
+    uz: "To'ldirish havolasi yaratildi",
+    en: "Deposit link created",
+    ru: "Ссылка для пополнения создана",
+  },
+  errorCreatingDeposit: {
+    uz: "To'ldirish havolasini yaratishda xatolik",
+    en: "Error creating deposit link",
+    ru: "Ошибка при создании ссылки для пополнения",
+  },
+  copyLink: {
+    uz: "Havolani nusxalash",
+    en: "Copy Link",
+    ru: "Копировать ссылку",
+  },
+  openLink: {
+    uz: "Havolani ochish",
+    en: "Open Link",
+    ru: "Открыть ссылку",
+  },
+  invalidAmount: {
+    uz: "Noto'g'ri miqdor",
+    en: "Invalid amount",
+    ru: "Неверная сумма",
+  },
+  invalidAddress: {
+    uz: "Noto'g'ri manzil",
+    en: "Invalid address",
+    ru: "Неверный адрес",
+  },
+  processWithdrawal: {
+    uz: "Pul yechishni boshlash",
+    en: "Process Withdrawal",
+    ru: "Обработать вывод",
+  },
+  withdrawalProcessed: {
+    uz: "Pul yechish muvaffaqiyatli boshlandi",
+    en: "Withdrawal processed successfully",
+    ru: "Вывод средств успешно обработан",
+  },
+  errorProcessingWithdrawal: {
+    uz: "Pul yechishda xatolik yuz berdi",
+    en: "Error processing withdrawal",
+    ru: "Ошибка при обработке вывода",
+  },
+  availableBalance: {
+    uz: "Mavjud balans",
+    en: "Available Balance",
+    ru: "Доступный баланс",
+  },
+  cryptoAddress: {
+    uz: "Kripto manzil",
+    en: "Crypto Address",
+    ru: "Крипто адрес",
+  },
+  withdrawAddressDescription: {
+    uz: "Pul yechish uchun kripto manzilni kiriting",
+    en: "Enter the crypto address for withdrawal",
+    ru: "Введите крипто адрес для вывода",
+  },
+  financeManagement: {
+    uz: "Moliya boshqaruvi",
+    en: "Finance Management",
+    ru: "Управление финансами",
+  },
+  completed: {
+    uz: "Bajarildi",
+    en: "Completed",
+    ru: "Завершено",
+  },
+  pending: {
+    uz: "Kutilmoqda",
+    en: "Pending",
+    ru: "В ожидании",
+  },
+  failed: {
+    uz: "Muvaffaqiyatsiz",
+    en: "Failed",
+    ru: "Не удалось",
+  },
+  joinCompany: {
+    uz: "Kompaniyaga qo'shilish",
+    en: "Join Company",
+    ru: "Присоединиться к компании",
+  },
+  joinCompanyDescription: {
+    uz: "Kompaniyaga qo'shilish uchun kompaniya ID raqamini kiriting. Bu raqamni kompaniya administratoridan olishingiz mumkin.",
+    en: "Enter the company ID to join a company. You can get this ID from your company administrator.",
+    ru: "Введите ID компании, чтобы присоединиться к компании. Вы можете получить этот ID у администратора компании.",
+  },
+  companyId: {
+    uz: "Kompaniya ID",
+    en: "Company ID",
+    ru: "ID компании",
+  },
+  enterCompanyId: {
+    uz: "Kompaniya ID raqamini kiriting",
+    en: "Enter company ID",
+    ru: "Введите ID компании",
+  },
+  sendJoinRequest: {
+    uz: "So'rov yuborish",
+    en: "Send Join Request",
+    ru: "Отправить запрос",
+  },
+  pleaseEnterCompanyId: {
+    uz: "Iltimos, kompaniya ID raqamini kiriting",
+    en: "Please enter company ID",
+    ru: "Пожалуйста, введите ID компании",
+  },
+  pendingRequestExists: {
+    uz: "Siz allaqachon ushbu kompaniyaga qo'shilish so'rovini yuborgansiz",
+    en: "You already have a pending join request for this company",
+    ru: "У вас уже есть ожидающий запрос на присоединение к этой компании",
+  },
+  alreadyJoinedCompany: {
+    uz: "Siz allaqachon ushbu kompaniyaga qo'shilgansiz",
+    en: "You have already joined this company",
+    ru: "Вы уже присоединились к этой компании",
+  },
+  joinRequestSent: {
+    uz: "Kompaniyaga qo'shilish so'rovi yuborildi: {company}",
+    en: "Join request sent to company: {company}",
+    ru: "Запрос на присоединение отправлен в компанию: {company}",
+  },
+  errorSendingJoinRequest: {
+    uz: "So'rov yuborishda xatolik yuz berdi",
+    en: "Error sending join request",
+    ru: "Ошибка при отправке запроса",
+  },
+  joinRequests: {
+    uz: "Qo'shilish so'rovlari",
+    en: "Join Requests",
+    ru: "Запросы на присоединение",
+  },
+  errorFetchingJoinRequests: {
+    uz: "So'rovlarni yuklashda xatolik",
+    en: "Error fetching join requests",
+    ru: "Ошибка при загрузке запросов",
+  },
+  joinRequestApproved: {
+    uz: "So'rov tasdiqlandi",
+    en: "Join request approved",
+    ru: "Запрос одобрен",
+  },
+  joinRequestRejected: {
+    uz: "So'rov rad etildi",
+    en: "Join request rejected",
+    ru: "Запрос отклонен",
+  },
+  errorApprovingJoinRequest: {
+    uz: "So'rovni tasdiqlashda xatolik",
+    en: "Error approving join request",
+    ru: "Ошибка при одобрении запроса",
+  },
+  errorRejectingJoinRequest: {
+    uz: "So'rovni rad etishda xatolik",
+    en: "Error rejecting join request",
+    ru: "Ошибка при отклонении запроса",
+  },
+  approve: {
+    uz: "Tasdiqlash",
+    en: "Approve",
+    ru: "Одобрить",
+  },
+  reject: {
+    uz: "Rad etish",
+    en: "Reject",
+    ru: "Отклонить",
+  },
+  noJoinRequests: {
+    uz: "Qo'shilish so'rovlari yo'q",
+    en: "No join requests",
+    ru: "Нет запросов на присоединение",
+  },
+  welcome: {
+    uz: "Xush kelibsiz",
+    en: "Welcome",
+    ru: "Добро пожаловать",
+  },
+  noCompanyAssigned: {
+    uz: "Siz hali hech qanday kompaniyaga biriktirilmagansiz. Kompaniyaga qo'shilish uchun quyidagi formadan foydalaning.",
+    en: "You are not assigned to any company yet. Use the form below to join a company.",
+    ru: "Вы еще не назначены ни в одну компанию. Используйте форму ниже, чтобы присоединиться к компании.",
+  },
+  joinRequestHistory: {
+    uz: "Qo'shilish so'rovlari tarixi",
+    en: "Join Request History",
+    ru: "История запросов на присоединение",
+  },
+  companyDashboard: {
+    uz: "Kompaniya paneli",
+    en: "Company Dashboard",
+    ru: "Панель компании",
+  },
+  accessCompanyFeatures: {
+    uz: "Kompaniya imkoniyatlariga kirish",
+    en: "Access company features",
+    ru: "Доступ к функциям компании",
+  },
+  openDashboard: {
+    uz: "Panelni ochish",
+    en: "Open Dashboard",
+    ru: "Открыть панель",
+  },
 }
 
 type LanguageContextType = {
