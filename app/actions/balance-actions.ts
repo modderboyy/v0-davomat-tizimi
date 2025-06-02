@@ -1,57 +1,27 @@
 "use server"
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { getNowPaymentsToken, createSubscriptionPlan, createPayment, getPaymentStatus } from "../services/nowpayments"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import {
+  createPayment,
+  getPaymentStatus,
+  getEstimatedPrice,
+  SUPPORTED_CRYPTOCURRENCIES,
+  validateMinimumAmount,
+  getMinimumAmount,
+} from "../services/nowpayments"
 
 // Environment variables for NowPayments
-const NOWPAYMENTS_EMAIL = process.env.NOWPAYMENTS_EMAIL || ""
-const NOWPAYMENTS_PASSWORD = process.env.NOWPAYMENTS_PASSWORD || ""
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY || ""
 
-// Create a subscription plan for a company
-export async function createCompanySubscriptionPlan(companyId: string, companyName: string) {
-  const supabase = createClientComponentClient()
-
-  try {
-    // Get JWT token
-    const token = await getNowPaymentsToken(NOWPAYMENTS_EMAIL, NOWPAYMENTS_PASSWORD)
-
-    // Create subscription plan
-    const plan = await createSubscriptionPlan(
-      token,
-      `${companyName} - Monthly Plan`,
-      30, // 30 days interval
-      10, // $10 per month
-      "USD",
-    )
-
-    // Update company record with plan ID
-    const { error } = await supabase
-      .from("companies")
-      .update({
-        nowpayments_account_id: plan.id,
-        balance_id: plan.id,
-      })
-      .eq("id", companyId)
-
-    if (error) throw error
-
-    return { success: true, planId: plan.id, plan }
-  } catch (error) {
-    console.error("Error creating subscription plan:", error)
-    return { success: false, error: error.message }
-  }
-}
-
-// Get company balance (simplified - using database balance)
+// Get company balance
 export async function getCompanyBalance(companyId: string) {
-  const supabase = createClientComponentClient()
+  const supabase = createServerComponentClient({ cookies })
 
   try {
-    // Get company balance from database
     const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("nowpayments_account_id, balance")
+      .select("balance")
       .eq("id", companyId)
       .single()
 
@@ -60,7 +30,6 @@ export async function getCompanyBalance(companyId: string) {
     return {
       success: true,
       balance: company.balance || 0,
-      accountId: company.nowpayments_account_id,
     }
   } catch (error) {
     console.error("Error getting company balance:", error)
@@ -69,32 +38,64 @@ export async function getCompanyBalance(companyId: string) {
 }
 
 // Create a payment for deposit
-export async function createCompanyDepositPayment(companyId: string, amount: number) {
-  const supabase = createClientComponentClient()
+export async function createCompanyDepositPayment(companyId: string, amount: number, cryptocurrency = "btc") {
+  const supabase = createServerComponentClient({ cookies })
 
   try {
+    // Validate minimum amount
+    if (!validateMinimumAmount(cryptocurrency, amount)) {
+      const minAmount = getMinimumAmount(cryptocurrency)
+      return {
+        success: false,
+        error: `Minimum amount for ${cryptocurrency.toUpperCase()} is ${minAmount}`,
+      }
+    }
+
+    // Get estimated price first
+    const estimate = await getEstimatedPrice(NOWPAYMENTS_API_KEY, amount, "usd", cryptocurrency)
+
     // Create payment using NowPayments
-    const payment = await createPayment(NOWPAYMENTS_API_KEY, amount, "USD", `deposit-${companyId}-${Date.now()}`)
+    const payment = await createPayment(
+      NOWPAYMENTS_API_KEY,
+      amount,
+      "usd",
+      cryptocurrency,
+      `deposit-${companyId}-${Date.now()}`,
+      `Deposit for company ${companyId}`,
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/nowpayments`,
+    )
 
     // Record transaction
     const { error: transactionError } = await supabase.from("payment_transactions").insert({
       company_id: companyId,
       amount,
+      currency: "USD",
       transaction_type: "deposit",
-      status: "pending",
+      status: payment.payment_status || "waiting",
       payment_id: payment.payment_id,
-      payment_details: payment,
+      payment_details: {
+        ...payment,
+        estimated_amount: estimate.estimated_amount,
+        pay_currency: cryptocurrency,
+      },
     })
 
     if (transactionError) throw transactionError
 
     return {
       success: true,
-      paymentUrl: payment.invoice_url,
-      paymentId: payment.payment_id,
-      paymentAddress: payment.pay_address,
-      payAmount: payment.pay_amount,
-      payCurrency: payment.pay_currency,
+      payment: {
+        paymentId: payment.payment_id,
+        paymentStatus: payment.payment_status,
+        payAddress: payment.pay_address,
+        payAmount: payment.pay_amount,
+        payCurrency: payment.pay_currency,
+        priceAmount: payment.price_amount,
+        priceCurrency: payment.price_currency,
+        expirationDate: payment.expiration_estimate_date,
+        payinExtraId: payment.payin_extra_id,
+        network: payment.network,
+      },
     }
   } catch (error) {
     console.error("Error creating deposit payment:", error)
@@ -104,7 +105,7 @@ export async function createCompanyDepositPayment(companyId: string, amount: num
 
 // Check payment status and update balance
 export async function checkPaymentStatus(paymentId: string) {
-  const supabase = createClientComponentClient()
+  const supabase = createServerComponentClient({ cookies })
 
   try {
     // Get payment status from NowPayments
@@ -119,15 +120,8 @@ export async function checkPaymentStatus(paymentId: string) {
 
     if (transactionError) throw transactionError
 
-    // Update transaction status
-    let newStatus = "pending"
-    if (paymentStatus.payment_status === "finished") {
-      newStatus = "completed"
-    } else if (paymentStatus.payment_status === "failed") {
-      newStatus = "failed"
-    } else if (paymentStatus.payment_status === "expired") {
-      newStatus = "failed"
-    }
+    // Map NowPayments status to our status
+    const newStatus = paymentStatus.payment_status
 
     // Update transaction
     const { error: updateError } = await supabase
@@ -140,8 +134,8 @@ export async function checkPaymentStatus(paymentId: string) {
 
     if (updateError) throw updateError
 
-    // If payment is completed, update company balance
-    if (newStatus === "completed" && transaction.transaction_type === "deposit") {
+    // If payment is finished, update company balance
+    if (newStatus === "finished" && transaction.transaction_type === "deposit") {
       const { data: company, error: companyError } = await supabase
         .from("companies")
         .select("balance")
@@ -167,11 +161,20 @@ export async function checkPaymentStatus(paymentId: string) {
   }
 }
 
-// Process withdrawal (simplified - just update database)
-export async function processWithdrawal(companyId: string, amount: number, address: string) {
-  const supabase = createClientComponentClient()
+// Process withdrawal
+export async function processWithdrawal(companyId: string, amount: number, cryptocurrency: string, address: string) {
+  const supabase = createServerComponentClient({ cookies })
 
   try {
+    // Validate minimum amount
+    if (!validateMinimumAmount(cryptocurrency, amount)) {
+      const minAmount = getMinimumAmount(cryptocurrency)
+      return {
+        success: false,
+        error: `Minimum amount for ${cryptocurrency.toUpperCase()} is ${minAmount}`,
+      }
+    }
+
     // Get company balance
     const { data: company, error: companyError } = await supabase
       .from("companies")
@@ -191,10 +194,15 @@ export async function processWithdrawal(companyId: string, amount: number, addre
       .from("payment_transactions")
       .insert({
         company_id: companyId,
-        amount: -amount, // Negative amount for withdrawal
+        amount: -amount,
+        currency: "USD",
         transaction_type: "withdraw",
-        status: "completed", // For demo purposes, mark as completed immediately
-        payment_details: { address, note: "Manual withdrawal" },
+        status: "finished", // For demo purposes
+        payment_details: {
+          address,
+          cryptocurrency,
+          note: "Manual withdrawal",
+        },
       })
       .select()
       .single()
@@ -218,7 +226,7 @@ export async function processWithdrawal(companyId: string, amount: number, addre
 
 // Get transaction history
 export async function getTransactionHistory(companyId: string) {
-  const supabase = createClientComponentClient()
+  const supabase = createServerComponentClient({ cookies })
 
   try {
     const { data, error } = await supabase
@@ -232,6 +240,28 @@ export async function getTransactionHistory(companyId: string) {
     return { success: true, transactions: data || [] }
   } catch (error) {
     console.error("Error getting transaction history:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Get supported cryptocurrencies
+export async function getSupportedCryptocurrencies() {
+  return {
+    success: true,
+    cryptocurrencies: SUPPORTED_CRYPTOCURRENCIES,
+  }
+}
+
+// Get estimated price for amount
+export async function getEstimatedCryptoPrice(amount: number, cryptocurrency: string) {
+  try {
+    const estimate = await getEstimatedPrice(NOWPAYMENTS_API_KEY, amount, "usd", cryptocurrency)
+    return {
+      success: true,
+      estimate,
+    }
+  } catch (error) {
+    console.error("Error getting estimated price:", error)
     return { success: false, error: error.message }
   }
 }
