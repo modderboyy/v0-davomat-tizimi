@@ -17,9 +17,9 @@ import {
   ExternalLink,
 } from "lucide-react"
 import {
-  createCompanyPaymentAccount,
+  createCompanySubscriptionPlan,
   getCompanyBalance,
-  createCompanyDepositLink,
+  createCompanyDepositPayment,
   processWithdrawal,
   getTransactionHistory,
 } from "../actions/balance-actions"
@@ -73,7 +73,7 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
     fetchBalanceData()
   }, [companyId])
 
-  // Create payment account if not exists
+  // Create subscription plan if not exists
   const handleCreateAccount = async () => {
     try {
       setLoading(true)
@@ -87,18 +87,18 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
 
       if (companyError) throw companyError
 
-      const result = await createCompanyPaymentAccount(companyId, company.company_name)
+      const result = await createCompanySubscriptionPlan(companyId, company.company_name)
 
       if (result.success) {
-        showNotification("success", t("paymentAccountCreated"))
-        setAccountId(result.accountId)
+        showNotification("success", t("subscriptionPlanCreated"))
+        setAccountId(result.planId)
         fetchBalanceData()
       } else {
         showNotification("error", result.error)
       }
     } catch (error) {
-      console.error("Error creating payment account:", error)
-      showNotification("error", t("errorCreatingPaymentAccount"))
+      console.error("Error creating subscription plan:", error)
+      showNotification("error", t("errorCreatingSubscriptionPlan"))
     } finally {
       setLoading(false)
     }
@@ -116,11 +116,11 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
         return
       }
 
-      const result = await createCompanyDepositLink(companyId, amount)
+      const result = await createCompanyDepositPayment(companyId, amount)
 
       if (result.success) {
-        setDepositLink(result.depositLink)
-        showNotification("success", t("depositLinkCreated"))
+        setDepositLink(result.paymentUrl)
+        showNotification("success", t("paymentCreated"))
       } else {
         setError(result.error)
       }
@@ -242,7 +242,7 @@ export default function BalanceManagement({ companyId }: { companyId: string }) 
                   disabled={loading}
                 >
                   {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                  {t("createPaymentAccount")}
+                  {t("createSubscriptionPlan")}
                 </button>
               ) : (
                 <>

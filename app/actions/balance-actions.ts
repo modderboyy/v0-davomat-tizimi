@@ -1,48 +1,54 @@
 "use server"
 
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { getNowPaymentsToken, createSubPartnerAccount, createDepositLink, withdrawFunds } from "../services/nowpayments"
+import { getNowPaymentsToken, createSubscriptionPlan, createPayment, getPaymentStatus } from "../services/nowpayments"
 
 // Environment variables for NowPayments
-const NOWPAYMENTS_EMAIL = process.env.NOWPAYMENTS_EMAIL || "diyorbekxme@gmail.com"
-const NOWPAYMENTS_PASSWORD = process.env.NOWPAYMENTS_PASSWORD || "#Diyor2010#"
+const NOWPAYMENTS_EMAIL = process.env.NOWPAYMENTS_EMAIL || ""
+const NOWPAYMENTS_PASSWORD = process.env.NOWPAYMENTS_PASSWORD || ""
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY || ""
 
-// Create a NowPayments account for a company
-export async function createCompanyPaymentAccount(companyId: string, companyName: string) {
+// Create a subscription plan for a company
+export async function createCompanySubscriptionPlan(companyId: string, companyName: string) {
   const supabase = createClientComponentClient()
 
   try {
     // Get JWT token
     const token = await getNowPaymentsToken(NOWPAYMENTS_EMAIL, NOWPAYMENTS_PASSWORD)
 
-    // Create sub-partner account
-    const account = await createSubPartnerAccount(token, companyName)
+    // Create subscription plan
+    const plan = await createSubscriptionPlan(
+      token,
+      `${companyName} - Monthly Plan`,
+      30, // 30 days interval
+      10, // $10 per month
+      "USD",
+    )
 
-    // Update company record with account ID
+    // Update company record with plan ID
     const { error } = await supabase
       .from("companies")
       .update({
-        nowpayments_account_id: account.id,
-        balance_id: account.id,
+        nowpayments_account_id: plan.id,
+        balance_id: plan.id,
       })
       .eq("id", companyId)
 
     if (error) throw error
 
-    return { success: true, accountId: account.id }
+    return { success: true, planId: plan.id, plan }
   } catch (error) {
-    console.error("Error creating payment account:", error)
+    console.error("Error creating subscription plan:", error)
     return { success: false, error: error.message }
   }
 }
 
-// Get company balance
+// Get company balance (simplified - using database balance)
 export async function getCompanyBalance(companyId: string) {
   const supabase = createClientComponentClient()
 
   try {
-    // Get company account ID
+    // Get company balance from database
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .select("nowpayments_account_id, balance")
@@ -51,12 +57,6 @@ export async function getCompanyBalance(companyId: string) {
 
     if (companyError) throw companyError
 
-    if (!company.nowpayments_account_id) {
-      return { success: false, error: "No payment account found for this company" }
-    }
-
-    // For now, return the balance from the database
-    // In a production environment, you would fetch the real-time balance from NowPayments
     return {
       success: true,
       balance: company.balance || 0,
@@ -68,29 +68,13 @@ export async function getCompanyBalance(companyId: string) {
   }
 }
 
-// Create a deposit link
-export async function createCompanyDepositLink(companyId: string, amount: number) {
+// Create a payment for deposit
+export async function createCompanyDepositPayment(companyId: string, amount: number) {
   const supabase = createClientComponentClient()
 
   try {
-    // Get company account ID
-    const { data: company, error: companyError } = await supabase
-      .from("companies")
-      .select("nowpayments_account_id")
-      .eq("id", companyId)
-      .single()
-
-    if (companyError) throw companyError
-
-    if (!company.nowpayments_account_id) {
-      return { success: false, error: "No payment account found for this company" }
-    }
-
-    // Get JWT token
-    const token = await getNowPaymentsToken(NOWPAYMENTS_EMAIL, NOWPAYMENTS_PASSWORD)
-
-    // Create deposit link
-    const depositData = await createDepositLink(token, company.nowpayments_account_id, amount)
+    // Create payment using NowPayments
+    const payment = await createPayment(NOWPAYMENTS_API_KEY, amount, "USD", `deposit-${companyId}-${Date.now()}`)
 
     // Record transaction
     const { error: transactionError } = await supabase.from("payment_transactions").insert({
@@ -98,61 +82,126 @@ export async function createCompanyDepositLink(companyId: string, amount: number
       amount,
       transaction_type: "deposit",
       status: "pending",
-      payment_id: depositData.id,
-      payment_details: depositData,
+      payment_id: payment.payment_id,
+      payment_details: payment,
     })
 
     if (transactionError) throw transactionError
 
-    return { success: true, depositLink: depositData.payment_url, paymentId: depositData.id }
+    return {
+      success: true,
+      paymentUrl: payment.invoice_url,
+      paymentId: payment.payment_id,
+      paymentAddress: payment.pay_address,
+      payAmount: payment.pay_amount,
+      payCurrency: payment.pay_currency,
+    }
   } catch (error) {
-    console.error("Error creating deposit link:", error)
+    console.error("Error creating deposit payment:", error)
     return { success: false, error: error.message }
   }
 }
 
-// Process withdrawal
+// Check payment status and update balance
+export async function checkPaymentStatus(paymentId: string) {
+  const supabase = createClientComponentClient()
+
+  try {
+    // Get payment status from NowPayments
+    const paymentStatus = await getPaymentStatus(NOWPAYMENTS_API_KEY, paymentId)
+
+    // Get transaction from database
+    const { data: transaction, error: transactionError } = await supabase
+      .from("payment_transactions")
+      .select("*")
+      .eq("payment_id", paymentId)
+      .single()
+
+    if (transactionError) throw transactionError
+
+    // Update transaction status
+    let newStatus = "pending"
+    if (paymentStatus.payment_status === "finished") {
+      newStatus = "completed"
+    } else if (paymentStatus.payment_status === "failed") {
+      newStatus = "failed"
+    } else if (paymentStatus.payment_status === "expired") {
+      newStatus = "failed"
+    }
+
+    // Update transaction
+    const { error: updateError } = await supabase
+      .from("payment_transactions")
+      .update({
+        status: newStatus,
+        payment_details: paymentStatus,
+      })
+      .eq("payment_id", paymentId)
+
+    if (updateError) throw updateError
+
+    // If payment is completed, update company balance
+    if (newStatus === "completed" && transaction.transaction_type === "deposit") {
+      const { data: company, error: companyError } = await supabase
+        .from("companies")
+        .select("balance")
+        .eq("id", transaction.company_id)
+        .single()
+
+      if (companyError) throw companyError
+
+      const newBalance = (company.balance || 0) + transaction.amount
+
+      const { error: balanceError } = await supabase
+        .from("companies")
+        .update({ balance: newBalance })
+        .eq("id", transaction.company_id)
+
+      if (balanceError) throw balanceError
+    }
+
+    return { success: true, status: newStatus, paymentStatus }
+  } catch (error) {
+    console.error("Error checking payment status:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Process withdrawal (simplified - just update database)
 export async function processWithdrawal(companyId: string, amount: number, address: string) {
   const supabase = createClientComponentClient()
 
   try {
-    // Get company account ID
+    // Get company balance
     const { data: company, error: companyError } = await supabase
       .from("companies")
-      .select("nowpayments_account_id, balance")
+      .select("balance")
       .eq("id", companyId)
       .single()
 
     if (companyError) throw companyError
-
-    if (!company.nowpayments_account_id) {
-      return { success: false, error: "No payment account found for this company" }
-    }
 
     // Check if balance is sufficient
     if ((company.balance || 0) < amount) {
       return { success: false, error: "Insufficient balance" }
     }
 
-    // Get JWT token
-    const token = await getNowPaymentsToken(NOWPAYMENTS_EMAIL, NOWPAYMENTS_PASSWORD)
-
-    // Process withdrawal
-    const withdrawalData = await withdrawFunds(token, company.nowpayments_account_id, amount, "USD", address)
-
     // Record transaction
-    const { error: transactionError } = await supabase.from("payment_transactions").insert({
-      company_id: companyId,
-      amount: -amount, // Negative amount for withdrawal
-      transaction_type: "withdraw",
-      status: "pending",
-      payment_id: withdrawalData.id,
-      payment_details: withdrawalData,
-    })
+    const { data: transaction, error: transactionError } = await supabase
+      .from("payment_transactions")
+      .insert({
+        company_id: companyId,
+        amount: -amount, // Negative amount for withdrawal
+        transaction_type: "withdraw",
+        status: "completed", // For demo purposes, mark as completed immediately
+        payment_details: { address, note: "Manual withdrawal" },
+      })
+      .select()
+      .single()
 
     if (transactionError) throw transactionError
 
-    // Update company balance (this would be handled by webhooks in production)
+    // Update company balance
     const { error: updateError } = await supabase
       .from("companies")
       .update({ balance: (company.balance || 0) - amount })
@@ -160,7 +209,7 @@ export async function processWithdrawal(companyId: string, amount: number, addre
 
     if (updateError) throw updateError
 
-    return { success: true, withdrawalId: withdrawalData.id }
+    return { success: true, withdrawalId: transaction.id }
   } catch (error) {
     console.error("Error processing withdrawal:", error)
     return { success: false, error: error.message }
