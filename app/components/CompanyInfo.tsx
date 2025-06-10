@@ -20,9 +20,6 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-// First, import the JoinRequestsManager component
-import JoinRequestsManager from "./JoinRequestsManager"
-
 export default function CompanyInfo({ companyId, isSubscriptionActive = true }) {
   const [companyData, setCompanyData] = useState(null)
   const [employeeCount, setEmployeeCount] = useState(0)
@@ -507,16 +504,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
         >
           {t("qrCodes")}
         </button>
-        <button
-          className={`py-2 px-4 font-medium text-sm ${
-            activeTab === "joinRequests"
-              ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          }`}
-          onClick={() => setActiveTab("joinRequests")}
-        >
-          {t("joinRequests")}
-        </button>
       </div>
 
       {/* Info Tab Content */}
@@ -780,13 +767,6 @@ export default function CompanyInfo({ companyId, isSubscriptionActive = true }) 
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Join Requests Tab Content */}
-      {activeTab === "joinRequests" && (
-        <div className="space-y-6">
-          <JoinRequestsManager companyId={companyId} />
         </div>
       )}
 
