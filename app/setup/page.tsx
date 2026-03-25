@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "../context/LanguageContext"
 import { ThemeToggle } from "../components/ThemeToggle"
@@ -25,7 +25,10 @@ export default function SetupPage() {
   const router = useRouter()
   const { t, language, setLanguage } = useLanguage()
   const { showNotification } = useDynamicIsland()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Kompaniya ma'lumotlarini olish
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { useLanguage } from "../context/LanguageContext"
 import { Loader2, Users, AlertTriangle } from "lucide-react"
 import { useDynamicIsland } from "./DynamicIsland"
@@ -19,7 +19,7 @@ export default function AutoEmployeeForm({
   const [error, setError] = useState("")
   const { t } = useLanguage()
   const { showNotification } = useDynamicIsland()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
   // Calculate max allowed employees to add
   const maxAllowed =

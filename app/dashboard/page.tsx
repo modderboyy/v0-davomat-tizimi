@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
 import QRScanner from "../components/QRScanner"
 import AdminPanel from "../components/AdminPanel"
@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [isNewCompany, setIsNewCompany] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const { t } = useLanguage()
 
   useEffect(() => {

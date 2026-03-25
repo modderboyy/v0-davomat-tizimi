@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { useLanguage } from "../context/LanguageContext"
 import { Save, Loader2, AlertTriangle } from "lucide-react"
 import { useDynamicIsland } from "./DynamicIsland"
@@ -19,7 +19,7 @@ export default function AddEmployeeForm({ onEmployeeAdded, companyId }) {
   const [isLoading, setIsLoading] = useState(true)
   const { t } = useLanguage()
   const { showNotification } = useDynamicIsland()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
   // Fetch company data and employee count on component mount
   useEffect(() => {

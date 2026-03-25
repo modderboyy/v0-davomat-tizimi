@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { RefreshCw, QrCode, MapPin, Wifi } from "lucide-react"
 import { useLanguage } from "../context/LanguageContext"
 import { ThemeToggle } from "./ThemeToggle"
@@ -15,7 +15,7 @@ export default function QRScanner({ user, companyId }) {
   const [isContainerReady, setIsContainerReady] = useState(false)
   const [wifiInfo, setWifiInfo] = useState(null)
   const [scanning, setScanning] = useState(false)
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const html5QrcodeRef = useRef(null)
   const { t } = useLanguage()
   const { showNotification } = useDynamicIsland()
