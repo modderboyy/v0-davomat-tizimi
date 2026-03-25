@@ -1,4 +1,4 @@
-# Davomat Tizimi
+.# Davomat Tizimi
 
 An attendance management system built with Next.js and Supabase.
 
